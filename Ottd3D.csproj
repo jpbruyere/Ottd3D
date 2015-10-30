@@ -80,6 +80,9 @@
     <EmbeddedResource Include="ui\BrushImageItem.goml" />
     <EmbeddedResource Include="ui\SpattingBrush.goml" />
     <EmbeddedResource Include="Shaders\hmBrush.frag" />
+    <EmbeddedResource Include="images\grass2.jpg" />
+    <EmbeddedResource Include="images\brownRock.jpg" />
+    <EmbeddedResource Include="ui\heightEditionMenu.goml" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="lib\GGL\GGL.csproj">

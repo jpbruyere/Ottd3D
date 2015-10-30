@@ -104,8 +104,8 @@ namespace Ottd3D
 		const float heightScale = 50.0f;
 
 		public EditorState CurrentState = EditorState.GroundLeveling;
-		public Vector4 splatBrush = new Vector4(0f, 0f, 10f/255f, 1f);
-		public float splatBrushRadius = 0.01f;
+		public Vector4 splatBrush = new Vector4(0f, 0f, 1f/255f, 1f);
+		public float splatBrushRadius = 0.04f;
 
 
 		Vector3 selPos = Vector3.Zero;
@@ -208,7 +208,9 @@ namespace Ottd3D
 
 		string[] groundTextures = new string[]
 		{
+			"#Ottd3D.images.grass2.jpg",
 			"#Ottd3D.images.grass.jpg",
+			"#Ottd3D.images.brownRock.jpg",
 			"#Ottd3D.images.grass_green_d.jpg",
 			"#Ottd3D.images.grass_ground_d.jpg",
 			"#Ottd3D.images.grass_ground2y_d.jpg",
@@ -477,7 +479,8 @@ namespace Ottd3D
 		}
 
 		#region Interface
-		GraphicObject splattingMenu = null;
+		GraphicObject splattingMenu = null,
+					 hmEditMenu = null;
 
 		void initInterface()
 		{
@@ -487,6 +490,11 @@ namespace Ottd3D
 
 			LoadInterface("#Ottd3D.ui.fps.goml").DataSource = this;
 			LoadInterface("#Ottd3D.ui.menu.goml").DataSource = this;
+			hmEditMenu = LoadInterface("#Ottd3D.ui.heightEditionMenu.goml");
+			hmEditMenu.DataSource = this;
+			splattingMenu = LoadInterface ("#Ottd3D.ui.SpattingBrush.goml");
+			splattingMenu.DataSource = this;
+			splattingMenu.Visible = false;
 		}
 		#region Mouse
 		void Mouse_Move(object sender, MouseMoveEventArgs e)
@@ -569,26 +577,21 @@ namespace Ottd3D
 			if (e.MemberName != "IsChecked" || (bool)e.NewValue != true)
 				return;
 
-			if (CurrentState == EditorState.GroundTexturing)
-				splattingMenu.Visible = false;
-			
 			GraphicObject g = sender as GraphicObject;
 			switch (g.Name) {
 			case "hmEdit":
 				CurrentState = EditorState.GroundLeveling;
 				circleShader.Radius = splatBrushRadius;
 				circleShader.Update ();
+				hmEditMenu.Visible = true;
+				splattingMenu.Visible = false;
 				break;
 			case "splatEdit":
 				CurrentState = EditorState.GroundTexturing;
 				circleShader.Radius = splatBrushRadius;
 				circleShader.Update ();
-
-				if (splattingMenu == null) {
-					splattingMenu = LoadInterface ("#Ottd3D.ui.SpattingBrush.goml");
-					splattingMenu.DataSource = this;
-				}else
-					splattingMenu.Visible = true;
+				hmEditMenu.Visible = false;
+				splattingMenu.Visible = true;
 				break;
 			}
 			//force update of position mesh
@@ -596,6 +599,14 @@ namespace Ottd3D
 		}
 		void onSelectedBrushChanged(object sender, SelectionChangeEventArgs e){
 			splatBrush.Y = (float)Array.IndexOf (GroundTextures, e.NewValue.ToString())/255f;
+		}
+		void onHmBrushChange (object sender, ValueChangeEventArgs e)
+		{
+			if (e.MemberName != "IsChecked" || (bool)e.NewValue != true)
+				return;
+
+			GraphicObject g = sender as GraphicObject;
+			//TODO:
 		}
 		#endregion
 
@@ -646,7 +657,7 @@ namespace Ottd3D
 					splattingBrushShader.Color = splatBrush;
 					updateSplatting ();
 				} else if (mouse [MouseButton.Right]) {
-					splattingBrushShader.Color = new Vector4 (0f, 0f, 0f, 1f);
+					splattingBrushShader.Color = new Vector4 (splatBrush.X, splatBrush.Y, -1f/255f, 1f);
 					updateSplatting ();
 				}
 			} else if (CurrentState == EditorState.GroundLeveling) {
