@@ -46,9 +46,9 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="ottdGrid.cs" />
     <Compile Include="Shaders\CircleShader.cs" />
     <Compile Include="Shaders\BrushShader.cs" />
+    <Compile Include="Ottd3DWindow.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="ui\" />
