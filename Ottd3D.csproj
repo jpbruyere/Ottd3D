@@ -10,7 +10,7 @@
     <RootNamespace>Ottd3D</RootNamespace>
     <AssemblyName>Tests</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
-    <StartupObject>Ottd3D.Ottd3DWindow</StartupObject>
+    <StartupObject>Ottd3D.Ottd3DMapEditor</StartupObject>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|Linux_x86' ">
     <DebugSymbols>true</DebugSymbols>
@@ -49,6 +49,7 @@
     <Compile Include="Shaders\CircleShader.cs" />
     <Compile Include="Shaders\BrushShader.cs" />
     <Compile Include="Ottd3DWindow.cs" />
+    <Compile Include="Ottd3DMapEditor.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="ui\" />
@@ -78,6 +79,7 @@
     <EmbeddedResource Include="Shaders\brush.frag" />
     <EmbeddedResource Include="ui\BrushImageItem.goml" />
     <EmbeddedResource Include="ui\SpattingBrush.goml" />
+    <EmbeddedResource Include="Shaders\hmBrush.frag" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="lib\GGL\GGL.csproj">
