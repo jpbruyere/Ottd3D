@@ -104,6 +104,8 @@ namespace Ottd3D
 		const float heightScale = 50.0f;
 
 		public EditorState CurrentState = EditorState.GroundLeveling;
+		public string FirstSplatTextureName;
+		public string SecondSplatTextureName;
 		public Vector4 splatBrush = new Vector4(0f, 0f, 1f/255f, 1f);
 		public float splatBrushRadius = 0.04f;
 
@@ -597,8 +599,15 @@ namespace Ottd3D
 			//force update of position mesh
 			SelectionPos = selPos;
 		}
-		void onSelectedBrushChanged(object sender, SelectionChangeEventArgs e){
-			splatBrush.Y = (float)Array.IndexOf (GroundTextures, e.NewValue.ToString())/255f;
+		void onFirstBrushChanged(object sender, SelectionChangeEventArgs e){
+			FirstSplatTextureName = e.NewValue.ToString ();
+			splatBrush.X = (float)Array.IndexOf (groundTextures, FirstSplatTextureName)/255f;
+			NotifyValueChange ("FirstSplatTextureName", FirstSplatTextureName);
+		}
+		void onSecondBrushChanged(object sender, SelectionChangeEventArgs e){
+			SecondSplatTextureName = e.NewValue.ToString ();
+			splatBrush.Y = (float)Array.IndexOf (groundTextures, SecondSplatTextureName)/255f;
+			NotifyValueChange ("SecondSplatTextureName", SecondSplatTextureName);
 		}
 		void onHmBrushChange (object sender, ValueChangeEventArgs e)
 		{
@@ -613,6 +622,9 @@ namespace Ottd3D
 		protected override void OnLoad (EventArgs e)
 		{
 			base.OnLoad (e);
+
+			FirstSplatTextureName = groundTextures [0];
+			SecondSplatTextureName =  groundTextures[1];
 
 			initInterface ();
 

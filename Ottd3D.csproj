@@ -83,6 +83,7 @@
     <EmbeddedResource Include="images\grass2.jpg" />
     <EmbeddedResource Include="images\brownRock.jpg" />
     <EmbeddedResource Include="ui\heightEditionMenu.goml" />
+    <EmbeddedResource Include="ui\SplatTexPopTemplate.goml" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="lib\GGL\GGL.csproj">
