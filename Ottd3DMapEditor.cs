@@ -300,6 +300,7 @@ namespace Ottd3D
 			hmGenerator.Radius = circleShader.Radius * radiusDiv;
 			hmGenerator.Center = SelectionPos.Xy/_gridSize;
 			hmGenerator.Update ();
+			getHeightMapData ();
 			gridShader.DisplacementMap = hmGenerator.OutputTex;
 			gridCacheIsUpToDate = false;
 		}
@@ -494,7 +495,7 @@ namespace Ottd3D
 			LoadInterface("#Ottd3D.ui.menu.goml").DataSource = this;
 			hmEditMenu = LoadInterface("#Ottd3D.ui.heightEditionMenu.goml");
 			hmEditMenu.DataSource = this;
-			splattingMenu = LoadInterface ("#Ottd3D.ui.SpattingBrush.goml");
+			splattingMenu = LoadInterface ("#Ottd3D.ui.SpattingMenu.goml");
 			splattingMenu.DataSource = this;
 			splattingMenu.Visible = false;
 		}
@@ -609,6 +610,11 @@ namespace Ottd3D
 			splatBrush.Y = (float)Array.IndexOf (groundTextures, SecondSplatTextureName)/255f;
 			NotifyValueChange ("SecondSplatTextureName", SecondSplatTextureName);
 		}
+		void onSave(object sender, MouseButtonEventArgs e){
+			Texture.Save (splattingBrushShader.OutputTex, @"splat.png");
+			Texture.Save (hmGenerator.OutputTex, @"heightmap.png");
+		}
+
 		void onHmBrushChange (object sender, ValueChangeEventArgs e)
 		{
 			if (e.MemberName != "IsChecked" || (bool)e.NewValue != true)
@@ -663,24 +669,26 @@ namespace Ottd3D
 			}
 			frameCpt++;
 
-			if (CurrentState == EditorState.GroundTexturing) {
-				MouseState mouse = Mouse.GetState ();
-				if (mouse [MouseButton.Left]) {
-					splattingBrushShader.Color = splatBrush;
-					updateSplatting ();
-				} else if (mouse [MouseButton.Right]) {
-					splattingBrushShader.Color = new Vector4 (splatBrush.X, splatBrush.Y, -1f/255f, 1f);
-					updateSplatting ();
+			if (hoverWidget == null) {
+				if (CurrentState == EditorState.GroundTexturing) {
+					MouseState mouse = Mouse.GetState ();
+					if (mouse [MouseButton.Left]) {
+						splattingBrushShader.Color = splatBrush;
+						updateSplatting ();
+					} else if (mouse [MouseButton.Right]) {
+						splattingBrushShader.Color = new Vector4 (splatBrush.X, splatBrush.Y, -1f / 255f, 1f);
+						updateSplatting ();
+					}
+				} else if (CurrentState == EditorState.GroundLeveling) {
+					MouseState mouse = Mouse.GetState ();
+					if (mouse [MouseButton.Left]) {
+						hmGenerator.Color = new Vector4 (0f, 1f / 255f, 0f, 1f);
+						updateHeightMap ();
+					} else if (mouse [MouseButton.Right]) {
+						hmGenerator.Color = new Vector4 (0f, -1f / 255f, 0f, 1f);
+						updateHeightMap ();
+					}				
 				}
-			} else if (CurrentState == EditorState.GroundLeveling) {
-				MouseState mouse = Mouse.GetState ();
-				if (mouse [MouseButton.Left]) {
-					hmGenerator.Color = new Vector4 (0f, 1f/255f, 0f, 1f);
-					updateHeightMap ();
-				} else if (mouse [MouseButton.Right]) {
-					hmGenerator.Color = new Vector4 (0f, -1f/255f, 0f, 1f);
-					updateHeightMap ();
-				}				
 			}
 
 

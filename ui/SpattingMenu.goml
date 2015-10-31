@@ -19,5 +19,6 @@
 						Template="#go.Templates.ScrollingListBox.goml" 
 						SelectedItemChanged="onSecondBrushChanged"/>
 		</Popper>
+		<Button Text="Save" MouseClick="onSave"/>
 	</VerticalStack>
 </Border>
