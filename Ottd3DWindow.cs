@@ -128,6 +128,8 @@ namespace Ottd3D
 		public static GameLib.Shader simpleTexturedShader;
 		public static go.GLBackend.TexturedShader CacheRenderingShader;
 
+		public static SingleLightShader objShader;
+
 		void initShaders()
 		{
 			circleShader = new CircleShader ("GGL.Shaders.GameLib.red",_circleTexSize, _circleTexSize);
@@ -151,6 +153,14 @@ namespace Ottd3D
 
 			Texture.SetTexFilterNeareast (gridShader.DisplacementMap);
 			Texture.SetTexFilterNeareast (gridShader.SplatTexture);
+
+			objShader = new SingleLightShader ();
+			objShader.Color = Color.White;
+			objShader.LightPos = vLight;
+			objShader.DiffuseTexture = heolienneTex;
+			objShader.DisplacementMap = gridShader.DisplacementMap;
+			objShader.MapSize = new Vector2 (_gridSize, _gridSize);
+			objShader.HeightScale = heightScale;
 		}
 
 		void updateShadersMatrices(){
@@ -161,6 +171,10 @@ namespace Ottd3D
 			simpleTexturedShader.ProjectionMatrix = projection;
 			simpleTexturedShader.ModelViewMatrix = modelview;
 			simpleTexturedShader.ModelMatrix = Matrix4.Identity;
+
+			objShader.ProjectionMatrix = projection;
+			objShader.ModelViewMatrix = modelview;
+			objShader.ModelMatrix = Matrix4.CreateTranslation (40.5f, 40.5f, 0);
 		}
 
 		#endregion
@@ -188,6 +202,8 @@ namespace Ottd3D
 
 		vaoMesh grid;
 		vaoMesh selMesh;
+		vaoMesh heolienne;
+		int heolienneTex;
 
 		public void initGrid()
 		{
@@ -493,6 +509,11 @@ namespace Ottd3D
 
 			initInterface ();
 
+
+			heolienne = vaoMesh.Load ("Meshes/heolienne.obj");
+			heolienneTex = new Texture(groundTextures[0]);
+
+
 			initShaders ();
 
 			GL.ClearColor(0.0f, 0.0f, 0.2f, 1.0f);
@@ -568,6 +589,10 @@ namespace Ottd3D
 		{
 			drawGrid ();
 			drawHoverCase ();
+
+
+			objShader.Enable ();
+			heolienne.Render (PrimitiveType.Triangles, 50000);
 		}
 
 		#region Main and CTOR
@@ -582,7 +607,9 @@ namespace Ottd3D
 		}
 		public Ottd3DWindow ()
 			: base(1024, 800,"test")
-		{}
+		{
+			VSync = VSyncMode.On;
+		}
 		#endregion
 	}
 }

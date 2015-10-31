@@ -50,11 +50,13 @@
     <Compile Include="Shaders\BrushShader.cs" />
     <Compile Include="Ottd3DWindow.cs" />
     <Compile Include="Ottd3DMapEditor.cs" />
+    <Compile Include="Shaders\SingleLightShader.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="ui\" />
     <Folder Include="images\" />
     <Folder Include="Shaders\" />
+    <Folder Include="Meshes\" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Shaders\Grid.frag" />
@@ -94,5 +96,20 @@
       <Project>{C2980F9B-4798-4C05-99E2-E174810F7C7B}</Project>
       <Name>GOLib</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Terrain.cs" />
+    <None Include="..\..\..\data\obj\heolienne.mtl">
+      <Link>Meshes\heolienne.mtl</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\..\..\data\obj\heolienne.obj.bmp">
+      <Link>Meshes\heolienne.obj.bmp</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\..\..\data\obj\heolienne.obj">
+      <Link>Meshes\heolienne.obj</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 </Project>
