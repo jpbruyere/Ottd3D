@@ -51,12 +51,14 @@
     <Compile Include="Ottd3DWindow.cs" />
     <Compile Include="Ottd3DMapEditor.cs" />
     <Compile Include="Shaders\SingleLightShader.cs" />
+    <Compile Include="Mesh.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="ui\" />
     <Folder Include="images\" />
     <Folder Include="Shaders\" />
     <Folder Include="Meshes\" />
+    <Folder Include="images\trees\" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Shaders\Grid.frag" />
@@ -86,6 +88,8 @@
     <EmbeddedResource Include="ui\heightEditionMenu.goml" />
     <EmbeddedResource Include="ui\SplatTexPopTemplate.goml" />
     <EmbeddedResource Include="ui\SpattingMenu.goml" />
+    <EmbeddedResource Include="images\trees\tree1.png" />
+    <EmbeddedResource Include="images\brownRock.dds" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="lib\GGL\GGL.csproj">

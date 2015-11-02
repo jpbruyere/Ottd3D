@@ -156,9 +156,14 @@ namespace Ottd3D
 			circleShader.Color = Color.White;
 			circleShader.Radius = 0.01f;
 
+			Texture.DefaultMagFilter = TextureMagFilter.Nearest;
+			Texture.DefaultMinFilter = TextureMinFilter.Nearest;
+
 			splattingBrushShader = new BrushShader ("Ottd3D.Shaders.brush", _splatingSize, _splatingSize);
-			Texture.SetTexFilterNeareast (splattingBrushShader.OutputTex);
-			Texture.SetTexFilterNeareast (splattingBrushShader.InputTex);
+			hmGenerator = new BrushShader ("Ottd3D.Shaders.hmBrush",_hmSize, _hmSize);
+
+			Texture.DefaultMagFilter = TextureMagFilter.Linear;
+			Texture.DefaultMinFilter = TextureMinFilter.Linear;
 
 			gridShader = new GameLib.VertexDispShader ("Ottd3D.Shaders.VertDisp.vert", "Ottd3D.Shaders.Grid.frag");
 
@@ -168,17 +173,15 @@ namespace Ottd3D
 			CacheRenderingShader.ModelViewMatrix = Matrix4.Identity;
 			CacheRenderingShader.Color = new Vector4(1f,1f,1f,1f);
 
-
-			hmGenerator = new BrushShader ("Ottd3D.Shaders.hmBrush",_hmSize, _hmSize);
-			Texture.SetTexFilterNeareast(hmGenerator.OutputTex);
-			Texture.SetTexFilterNeareast (hmGenerator.InputTex);
 			hmGenerator.Clear ();
 
 			circleShader.Update ();
 
 
+			Texture.DefaultWrapMode = TextureWrapMode.Repeat;
+			gridShader.DiffuseTexture = Texture.Load (TextureTarget.Texture2DArray, groundTextures);
+			Texture.DefaultWrapMode = TextureWrapMode.Clamp;
 
-			gridShader.DiffuseTexture = new TextureArray (groundTextures);
 			gridShader.DisplacementMap = hmGenerator.OutputTex;
 			gridShader.LightPos = vLight;
 			gridShader.MapSize = new Vector2 (_gridSize, _gridSize);
@@ -383,9 +386,12 @@ namespace Ottd3D
 			System.Drawing.Size cz = ClientRectangle.Size;
 
 			gridCacheTex = new Texture (cz.Width, cz.Height);
-			gridSelectionTex = new Texture (cz.Width, cz.Height);
 
-			Texture.SetTexFilterNeareast (gridSelectionTex);
+			Texture.DefaultMagFilter = TextureMagFilter.Nearest;
+			Texture.DefaultMinFilter = TextureMinFilter.Nearest;
+			gridSelectionTex = new Texture (cz.Width, cz.Height);
+			Texture.DefaultMagFilter = TextureMagFilter.Linear;
+			Texture.DefaultMinFilter = TextureMinFilter.Linear;
 
 			// Create Depth Renderbuffer
 			GL.GenRenderbuffers( 1, out depthRenderbuffer );
@@ -611,8 +617,8 @@ namespace Ottd3D
 			NotifyValueChange ("SecondSplatTextureName", SecondSplatTextureName);
 		}
 		void onSave(object sender, MouseButtonEventArgs e){
-			Texture.Save (splattingBrushShader.OutputTex, @"splat.png");
-			Texture.Save (hmGenerator.OutputTex, @"heightmap.png");
+			splattingBrushShader.OutputTex.Save ( @"splat.png");
+			hmGenerator.OutputTex.Save (@"heightmap.png");
 		}
 
 		void onHmBrushChange (object sender, ValueChangeEventArgs e)

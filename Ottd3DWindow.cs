@@ -119,6 +119,8 @@ namespace Ottd3D
 			get { return new Vector2 (Mouse.X, Mouse.Y); }
 		}
 		void updateSelMesh(){
+			if (selMesh != null)
+				selMesh.Dispose ();
 			selMesh = new vaoMesh ((float)Math.Floor(selPos.X)+0.5f, (float)Math.Floor(selPos.Y)+0.5f, selPos.Z, 1.0f, 1.0f);				
 		}
 
@@ -144,15 +146,20 @@ namespace Ottd3D
 			circleShader.Update ();
 
 
-			gridShader.DisplacementMap = new Texture ("heightmap.png",false);
+			Texture.FlipY = false;
+			Texture.DefaultMagFilter = TextureMagFilter.Nearest;
+			Texture.DefaultMinFilter = TextureMinFilter.Nearest;
+
+			gridShader.DisplacementMap = Texture.Load ("heightmap.png");
 			gridShader.LightPos = vLight;
 			gridShader.MapSize = new Vector2 (_gridSize, _gridSize);
 			gridShader.HeightScale = heightScale;
 
-			gridShader.SplatTexture = new Texture ("splat.png",false);
+			gridShader.SplatTexture = Texture.Load ("splat.png");
 
-			Texture.SetTexFilterNeareast (gridShader.DisplacementMap);
-			Texture.SetTexFilterNeareast (gridShader.SplatTexture);
+			Texture.DefaultMagFilter = TextureMagFilter.Linear;
+			Texture.DefaultMinFilter = TextureMinFilter.Linear;
+			Texture.FlipY = true;
 
 			objShader = new SingleLightShader ();
 			objShader.Color = Color.White;
@@ -176,11 +183,115 @@ namespace Ottd3D
 			objShader.ModelViewMatrix = modelview;
 			objShader.ModelMatrix = Matrix4.CreateTranslation (40.5f, 40.5f, 0);
 		}
+		#endregion
+
+		#region Tests
+		vaoMesh tree;
+		int treeTex;
+		vaoMesh heolienne;
+		Texture heolienneTex;
+
+		void initTestMesh(){
+			const float tsize = 1;
+			tree = new vaoMesh (
+				new Vector3[] {
+					new Vector3 (-tsize/2f, 0, 0),
+					new Vector3 (-tsize/2f, 0, tsize),
+					new Vector3 (tsize/2f, 0, 0),
+					new Vector3 (tsize/2f, 0, tsize),
+					//					new Vector3 (0, -tsize/2f, -tsize/2f),
+					//					new Vector3 (0, -tsize/2f, tsize/2f),
+					//					new Vector3 (0, tsize/2f, -tsize/2f),
+					//					new Vector3 (0, tsize/2f, tsize/2f)
+				},
+				new Vector2[] {
+					new Vector2 (0, 0),
+					new Vector2 (0, 1),
+					new Vector2 (1, 0),
+					new Vector2 (1, 1),
+					//					new Vector2 (1, 0),
+					//					new Vector2 (1, 1),
+					//					new Vector2 (0, 0),
+					//					new Vector2 (0, 1)
+				},
+				new Vector3[] {
+					new Vector3 (0, 1, 0),
+					new Vector3 (0, 1, 0),
+					new Vector3 (0, 1, 0),
+					new Vector3 (0, 1, 0),
+					//					new Vector3 (1, 0, 0),
+					//					new Vector3 (1, 0, 0),
+					//					new Vector3 (1, 0, 0),
+					//					new Vector3 (1, 0, 0)
+				},
+				null
+			);
+			//tree = new vaoMesh(0,0,tsize/2f,tsize,tsize);
+			treeTex = Texture.Load ("#Ottd3D.images.trees.tree1.png");
+
+			vaoMesh tmp = vaoMesh.Load ("Meshes/heolienne.obj");
+			Matrix4[] modMats = new Matrix4[100*100];
+			for (int i = 0; i < 100; i++) {
+				for (int j = 0; j < 100; j++) {
+					modMats [i*100+j] = Matrix4.CreateTranslation (i * 2, j * 2, 0);
+				}
+				//modMats [i] = Matrix4.Identity;
+			}
+			heolienne = new vaoMesh (tmp.positions, tmp.texCoords, tmp.normals, tmp.indices, modMats);
+			GL.GetError ();
+			heolienneTex = Texture.Load("#Ottd3D.images.brownRock.dds");
+			tmp.Dispose ();			
+		}
+		void drawingTests()
+		{
+			Matrix4 m = simpleTexturedShader.ModelViewMatrix;
+			m.Column0 = Vector4.UnitX;
+			//m.Column1 = Vector4.UnitY;
+			m.Column2 = Vector4.UnitZ;
+			//m.Column3 = new Vector4(m.Column3.X, m.Column3.Y, 0f, m.Column3.W);
+			m.Row3 = modelview.Row3;
+			//m.Row3 = new Vector4(m.Row3.X, m.Row3.Y, m.Row3.Z, m.Row3.W);
+			//			m.ClearRotation();
+			//			m.Column1 = modelview.Column1;
+			//
+			simpleTexturedShader.ModelViewMatrix = m;
+
+			//simpleTexturedShader.ModelMatrix = Matrix4.CreateTranslation (100, 100, 0);
+			simpleTexturedShader.Enable ();
+			GL.BindTexture (TextureTarget.Texture2D, treeTex);
+			tree.Render (PrimitiveType.TriangleStrip);
+			GL.BindTexture (TextureTarget.Texture2D, 0);
+			simpleTexturedShader.ModelViewMatrix = modelview;
+			simpleTexturedShader.ModelMatrix = Matrix4.Identity;
+
+			objShader.Enable ();
+			heolienne.Render (PrimitiveType.Triangles, 10000);			
+		}
+		void testDynShaders()
+		{
+			DynamicShader ds = new DynamicShader() { 
+				floatPrecision = DynamicShader.Precision.highp 
+			};
+			ds.VertexAttributes.Add(new ShaderData(typeof(Vector3), "in_position"));
+
+			ShaderData<Matrix4> sdProjection = new ShaderData<Matrix4> ("projection");
+			ShaderData<Matrix4> sdModelView = new ShaderData<Matrix4> ("modelView");
+			ShaderData<Matrix4> sdModel = new ShaderData<Matrix4> ("model");
+
+			ds.Uniforms.Add (sdProjection);
+			ds.Uniforms.Add (sdModelView);
+			ds.Uniforms.Add (sdModel);
+			ds.Uniforms.Add(new ShaderData<Vector4>("lightPos"));
+			ds.Uniforms.Add(new ShaderData<float>("heightScale"));
+			ds.Uniforms.Add(new ShaderData<Vector2>("mapSize"));
+
+			ds.Compile ();
+		}
 
 		#endregion
 
 		string[] groundTextures = new string[]
-		{
+		{			
 			"#Ottd3D.images.grass2.jpg",
 			"#Ottd3D.images.grass.jpg",
 			"#Ottd3D.images.brownRock.jpg",
@@ -202,8 +313,6 @@ namespace Ottd3D
 
 		vaoMesh grid;
 		vaoMesh selMesh;
-		vaoMesh heolienne;
-		int heolienneTex;
 
 		public void initGrid()
 		{
@@ -237,8 +346,9 @@ namespace Ottd3D
 			grid = new vaoMesh (positionVboData, texVboData, null);
 			grid.indices = indicesVboData;
 
-			gridShader.DiffuseTexture = new TextureArray (groundTextures);
-		
+			Texture.DefaultWrapMode = TextureWrapMode.Repeat;
+			gridShader.DiffuseTexture = Texture.Load (TextureTarget.Texture2DArray, groundTextures);
+			Texture.DefaultWrapMode = TextureWrapMode.Clamp;
 		}
 		void drawGrid()
 		{
@@ -301,7 +411,7 @@ namespace Ottd3D
 			splatTextureIsUpToDate = true;
 		QuadVAO cacheQuad;
 		Matrix4 cacheProjection;
-		int gridCacheTex, gridSelectionTex;
+		Texture gridCacheTex, gridSelectionTex;
 		int fboGrid, depthRenderbuffer;
 		DrawBuffersEnum[] dbe = new DrawBuffersEnum[]
 		{
@@ -345,9 +455,12 @@ namespace Ottd3D
 			System.Drawing.Size cz = ClientRectangle.Size;
 
 			gridCacheTex = new Texture (cz.Width, cz.Height);
-			gridSelectionTex = new Texture (cz.Width, cz.Height);
 
-			Texture.SetTexFilterNeareast (gridSelectionTex);
+			Texture.DefaultMagFilter = TextureMagFilter.Nearest;
+			Texture.DefaultMinFilter = TextureMinFilter.Nearest;
+			gridSelectionTex = new Texture (cz.Width, cz.Height);
+			Texture.DefaultMagFilter = TextureMagFilter.Linear;
+			Texture.DefaultMinFilter = TextureMinFilter.Linear;
 
 
 			// Create Depth Renderbuffer
@@ -507,12 +620,9 @@ namespace Ottd3D
 		{
 			base.OnLoad (e);
 
+			//initTestMesh ();
+
 			initInterface ();
-
-
-			heolienne = vaoMesh.Load ("Meshes/heolienne.obj");
-			heolienneTex = new Texture(groundTextures[0]);
-
 
 			initShaders ();
 
@@ -590,9 +700,7 @@ namespace Ottd3D
 			drawGrid ();
 			drawHoverCase ();
 
-
-			objShader.Enable ();
-			heolienne.Render (PrimitiveType.Triangles, 50000);
+			//drawingTests ();
 		}
 
 		#region Main and CTOR
@@ -608,7 +716,7 @@ namespace Ottd3D
 		public Ottd3DWindow ()
 			: base(1024, 800,"test")
 		{
-			VSync = VSyncMode.On;
+			//VSync = VSyncMode.On;
 		}
 		#endregion
 	}

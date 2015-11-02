@@ -36,7 +36,7 @@ namespace Ottd3D
 		}
 		#endregion
 
-		int evenTex;
+		Texture evenTex;
 		int centerLoc;
 
 		Vector2 center = new Vector2(0.5f,0.5f);
@@ -46,7 +46,7 @@ namespace Ottd3D
 			get { return center; }
 			set { center = value; }
 		}
-		public override int OutputTex {
+		public override Texture OutputTex {
 			get { return evenCycle ? evenTex : tex; }
 		}
 		public int InputTex {
