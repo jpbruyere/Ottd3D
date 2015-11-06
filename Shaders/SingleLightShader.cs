@@ -12,7 +12,6 @@ namespace Ottd3D
 		{
 			vertSource = @"
 			#version 330
-
 			precision highp float;
 
 			uniform mat4 Projection;
@@ -26,9 +25,11 @@ namespace Ottd3D
 			
 			uniform sampler2D heightMap;
 
-			in vec3 in_position;
-			in vec2 in_tex;
-			in vec3 in_normal;
+			layout (location = 0) in vec3 in_position;
+			layout (location = 1) in vec2 in_tex;
+			layout (location = 2) in vec3 in_normal;
+			layout (location = 3) in mat4 in_model;
+
 			out vec2 texCoord;
 			out vec3 v;
 			out vec3 N;
@@ -40,25 +41,27 @@ namespace Ottd3D
 			{				
 
 				texCoord = in_tex;
-				N = normalize(vec3(Normal * Model * vec4(in_normal, 0)));
+				N = normalize(vec3(Normal * in_model * vec4(in_normal, 0)));
 
 
-				vec3 pos = in_position;
-				pos.x += mod (gl_InstanceID, 100.0);
-				pos.y += floor(gl_InstanceID/100.0);
+				vec3 pos = in_position.xyz;
 
-				vec4 hm0 = texture2D(heightMap, (Model * vec4(pos, 1.0)).xy / mapSize);
+				//pos.x += mod (gl_InstanceID, 100.0);
+				//pos.y += floor(gl_InstanceID/100.0);
+
+				vec4 hm0 = texture2D(heightMap, (in_model * vec4(pos, 1.0)).xy / mapSize);
 				pos.z += hm0.g * heightScale;
 
 
-				v = vec3(ModelView * Model * vec4(pos, 0));
+				v = vec3(ModelView * in_model * vec4(pos, 0));
 
 				lPos = vec3(ModelView * lightPos);
-				gl_Position = Projection * ModelView * Model * vec4(pos, 1);
+				gl_Position = Projection * ModelView * in_model * vec4(pos, 1);
 			}";
 
 			fragSource = @"
-			#version 330
+			#version 330			
+
 			precision highp float;
 
 			uniform vec4 color;
@@ -80,10 +83,12 @@ namespace Ottd3D
 				if ( NdotL < 0.0) // light source on the wrong side?   
 					NdotL = dot(-N, L);
    				vec3 Idiff = vec3(1.0,1.0,1.0) * max(NdotL, 0.0);  
-   				Idiff = clamp(Idiff, 0.0, 1.0);    
+   				Idiff = clamp(Idiff, 0.0, 1.0); 
+   
 				vec4 diffTex = texture( tex, texCoord);
 
-				out_frag_color =  vec4(color.rgb * Idiff ,1.0) * color; 
+				out_frag_color =  vec4(diffTex.rgb , diffTex.a); 
+				//out_frag_color =  vec4(1.0,0.0,0.0, 1.0); 
 			}";
 			Compile ();
 		}
@@ -116,6 +121,7 @@ namespace Ottd3D
 			base.BindVertexAttributes ();
 
 			GL.BindAttribLocation(pgmId, 2, "in_normal");
+			GL.BindAttribLocation(pgmId, 3, "in_model");
 		}
 		protected override void GetUniformLocations ()
 		{
@@ -136,7 +142,7 @@ namespace Ottd3D
 			GL.ActiveTexture (TextureUnit.Texture1);
 			GL.BindTexture(TextureTarget.Texture2D, DisplacementMap);
 			GL.ActiveTexture (TextureUnit.Texture0);
-			GL.BindTexture(TextureTarget.Texture2DArray, DiffuseTexture);
+			GL.BindTexture(TextureTarget.Texture2D, DiffuseTexture);
 		}
 	}
 }

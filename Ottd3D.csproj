@@ -48,15 +48,16 @@
   <ItemGroup>
     <Compile Include="Shaders\CircleShader.cs" />
     <Compile Include="Shaders\BrushShader.cs" />
-    <Compile Include="Ottd3DWindow.cs" />
     <Compile Include="Ottd3DMapEditor.cs" />
     <Compile Include="Shaders\SingleLightShader.cs" />
+    <Compile Include="Ottd3DWindow.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="ui\" />
     <Folder Include="images\" />
     <Folder Include="Shaders\" />
     <Folder Include="Meshes\" />
+    <Folder Include="images\trees\" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Shaders\Grid.frag" />
@@ -86,6 +87,9 @@
     <EmbeddedResource Include="ui\heightEditionMenu.goml" />
     <EmbeddedResource Include="ui\SplatTexPopTemplate.goml" />
     <EmbeddedResource Include="ui\SpattingMenu.goml" />
+    <EmbeddedResource Include="images\trees\tree1.png" />
+    <EmbeddedResource Include="images\trees\obj__pinet1.obj" />
+    <EmbeddedResource Include="images\trees\pinet1.png" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="lib\GGL\GGL.csproj">
@@ -111,5 +115,8 @@
       <Link>Meshes\heolienne.obj</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Include="Ottd3DWindow_newtextures.cs" />
+    <None Include="images\trees\obj__pinet1.mtl" />
+    <None Include="images\trees\pinet1.tga" />
   </ItemGroup>
 </Project>

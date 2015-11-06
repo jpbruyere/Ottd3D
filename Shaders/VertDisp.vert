@@ -6,7 +6,6 @@ uniform mat4 Projection;
 uniform mat4 ModelView;
 uniform mat4 Model;
 uniform mat4 Normal;
-uniform vec4 lightPos;
 
 uniform vec2 mapSize;
 uniform float heightScale;
@@ -20,10 +19,10 @@ in vec2 in_tex;
 out vec2 texCoord;
 out vec2 splatTexCoord;
 //flat out float layer;
-out vec3 v;
+out vec4 vEyeSpacePos;
 out vec3 n;
-out vec3 lpos;
 
+//selection map output
 out vec4 vertex;
 
 void main(void)
@@ -51,26 +50,13 @@ void main(void)
 		pos[i] = vec3(xy, h);
 	}
 
-	//if (mod(gl_VertexID, 2)==0)
-	/*
-		n = normalize(
-			cross(pos[2] - pos[0], pos[1] - pos[0])
-		  + cross(pos[3] - pos[0], pos[2] - pos[0]) 
-		  + cross(pos[4] - pos[0], pos[3] - pos[2]) 
-		  + cross(pos[1] - pos[0], pos[4] - pos[2]) );
-	*/
-		n = normalize(
-			normalize(cross(pos[2] - pos[0], pos[1] - pos[0]))
-		  + normalize(cross(pos[3] - pos[0], pos[2] - pos[0])) 
-		  + normalize(cross(pos[4] - pos[0], pos[3] - pos[2])) 
-		  + normalize(cross(pos[1] - pos[0], pos[4] - pos[2])) / 4.0);
-	//else
-	//	n = normalize(cross(pos[3] - pos[1], pos[2] - pos[1]));
+	n = (Normal * vec4 (normalize(
+		normalize(cross(pos[2] - pos[0], pos[1] - pos[0]))
+	  + normalize(cross(pos[3] - pos[0], pos[2] - pos[0])) 
+	  + normalize(cross(pos[4] - pos[0], pos[3] - pos[2])) 
+	  + normalize(cross(pos[1] - pos[0], pos[4] - pos[2])) / 4.0), 0.0)).xyz;
 
-	//n = normalize(vec3(Normal * Model * vec4(0.0,0.0,1.0, 0.0)));
-	//v = normalize(vec3(Model * pos[0]));
-	v = vec3(ModelView * Model * vec4(pos[0], 1));
-	lpos = vec3(ModelView * lightPos);
+	vEyeSpacePos = ModelView * Model * vec4(pos[0], 1);
 	vertex = vec4((pos[0].xy) / (mapSize-vec2(1.0,1.0)), pos[0].z / heightScale, 1.0);
-	gl_Position = Projection * ModelView * Model * vec4(pos[0], 1.0);
+	gl_Position = Projection * vEyeSpacePos;
 }

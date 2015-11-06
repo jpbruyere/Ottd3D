@@ -13,9 +13,6 @@ using System.Diagnostics;
 using go;
 using System.Threading;
 using GGL;
-using System.Collections.Generic;
-using System.Linq;
-using System.Security.Permissions;
 
 
 namespace Ottd3D
@@ -25,16 +22,6 @@ namespace Ottd3D
 		public enum GameState
 		{
 			Playing,
-		}
-
-		[StructLayout(LayoutKind.Sequential)]
-		public struct UBOData
-		{
-			Matrix4 projection;
-			Matrix4 view;
-			Matrix4 model;
-			Vector4 LightPosition;
-			Vector4 Color;
 		}
 
 		const int _gridSize = 256;
@@ -104,17 +91,17 @@ namespace Ottd3D
 		}
 		public Vector3 vEyeTarget = new Vector3(32, 32, 0f);
 		public Vector3 vLook = Vector3.Normalize(new Vector3(-1f, -1f, 1f));  // Camera vLook Vector
-		public float zFar = 150.0f;
+		public float zFar = 512.0f;
 		public float zNear = 0.1f;
 		public float fovY = (float)Math.PI / 4;
 
-		float eyeDist = 100;
-		float eyeDistTarget = 100f;
+		float eyeDist = 30;
+		float eyeDistTarget = 30f;
 		float MoveSpeed = 0.01f;
 		float ZoomSpeed = 0.2f;
 		float RotationSpeed = 0.01f;
 
-		public Vector4 vLight = new Vector4 (0.5f, 0.5f, -1, 0);
+		public Vector4 vLight = new Vector4 (-1, -1, -1, 0);
 		#endregion
 
 		Vector3 selPos = Vector3.Zero;
@@ -132,6 +119,8 @@ namespace Ottd3D
 			get { return new Vector2 (Mouse.X, Mouse.Y); }
 		}
 		void updateSelMesh(){
+			if (selMesh != null)
+				selMesh.Dispose ();
 			selMesh = new vaoMesh ((float)Math.Floor(selPos.X)+0.5f, (float)Math.Floor(selPos.Y)+0.5f, selPos.Z, 1.0f, 1.0f);				
 		}
 
@@ -157,15 +146,20 @@ namespace Ottd3D
 			circleShader.Update ();
 
 
-			gridShader.DisplacementMap = new Texture ("heightmap.png",false);
+			Texture.FlipY = false;
+			Texture.DefaultMagFilter = TextureMagFilter.Nearest;
+			Texture.DefaultMinFilter = TextureMinFilter.Nearest;
+
+			gridShader.DisplacementMap = Texture.Load ("heightmap.png");
+			gridShader.LightPos = vLight;
 			gridShader.MapSize = new Vector2 (_gridSize, _gridSize);
 			gridShader.HeightScale = heightScale;
-			gridShader.FogColor = new Vector4 (0.7f,0.7f,0.7f,1f);
 
-			gridShader.SplatTexture = new Texture ("splat.png",false);
+			gridShader.SplatTexture = Texture.Load ("splat.png");
 
-			Texture.SetTexFilterNeareast (gridShader.DisplacementMap);
-			Texture.SetTexFilterNeareast (gridShader.SplatTexture);
+			Texture.DefaultMagFilter = TextureMagFilter.Linear;
+			Texture.DefaultMinFilter = TextureMinFilter.Linear;
+			Texture.FlipY = true;
 
 			objShader = new SingleLightShader ();
 			objShader.Color = Color.White;
@@ -180,7 +174,6 @@ namespace Ottd3D
 			gridShader.ProjectionMatrix = projection;
 			gridShader.ModelViewMatrix = modelview;
 			gridShader.ModelMatrix = Matrix4.Identity;
-			gridShader.LightPos = Vector4.Transform(vLight, modelview);
 
 			simpleTexturedShader.ProjectionMatrix = projection;
 			simpleTexturedShader.ModelViewMatrix = modelview;
@@ -188,13 +181,117 @@ namespace Ottd3D
 
 			objShader.ProjectionMatrix = projection;
 			objShader.ModelViewMatrix = modelview;
-			objShader.ModelMatrix = Matrix4.Identity;//Matrix4.CreateTranslation (40.5f, 40.5f, 0);
+			objShader.ModelMatrix = Matrix4.CreateTranslation (40.5f, 40.5f, 0);
+		}
+		#endregion
+
+		#region Tests
+		vaoMesh tree;
+		int treeTex;
+		vaoMesh heolienne;
+		Texture heolienneTex;
+
+		void initTestMesh(){
+			const float tsize = 1;
+			tree = new vaoMesh (
+				new Vector3[] {
+					new Vector3 (-tsize/2f, 0, 0),
+					new Vector3 (-tsize/2f, 0, tsize),
+					new Vector3 (tsize/2f, 0, 0),
+					new Vector3 (tsize/2f, 0, tsize),
+					//					new Vector3 (0, -tsize/2f, -tsize/2f),
+					//					new Vector3 (0, -tsize/2f, tsize/2f),
+					//					new Vector3 (0, tsize/2f, -tsize/2f),
+					//					new Vector3 (0, tsize/2f, tsize/2f)
+				},
+				new Vector2[] {
+					new Vector2 (0, 0),
+					new Vector2 (0, 1),
+					new Vector2 (1, 0),
+					new Vector2 (1, 1),
+					//					new Vector2 (1, 0),
+					//					new Vector2 (1, 1),
+					//					new Vector2 (0, 0),
+					//					new Vector2 (0, 1)
+				},
+				new Vector3[] {
+					new Vector3 (0, 1, 0),
+					new Vector3 (0, 1, 0),
+					new Vector3 (0, 1, 0),
+					new Vector3 (0, 1, 0),
+					//					new Vector3 (1, 0, 0),
+					//					new Vector3 (1, 0, 0),
+					//					new Vector3 (1, 0, 0),
+					//					new Vector3 (1, 0, 0)
+				},
+				null
+			);
+			//tree = new vaoMesh(0,0,tsize/2f,tsize,tsize);
+			treeTex = Texture.Load ("#Ottd3D.images.trees.tree1.png");
+
+			vaoMesh tmp = vaoMesh.Load ("Meshes/heolienne.obj");
+			Matrix4[] modMats = new Matrix4[100*100];
+			for (int i = 0; i < 100; i++) {
+				for (int j = 0; j < 100; j++) {
+					modMats [i*100+j] = Matrix4.CreateTranslation (i * 2, j * 2, 0);
+				}
+				//modMats [i] = Matrix4.Identity;
+			}
+			heolienne = new vaoMesh (tmp.positions, tmp.texCoords, tmp.normals, tmp.indices, modMats);
+			GL.GetError ();
+			heolienneTex = Texture.Load("#Ottd3D.images.brownRock.dds");
+			tmp.Dispose ();			
+		}
+		void drawingTests()
+		{
+			Matrix4 m = simpleTexturedShader.ModelViewMatrix;
+			m.Column0 = Vector4.UnitX;
+			//m.Column1 = Vector4.UnitY;
+			m.Column2 = Vector4.UnitZ;
+			//m.Column3 = new Vector4(m.Column3.X, m.Column3.Y, 0f, m.Column3.W);
+			m.Row3 = modelview.Row3;
+			//m.Row3 = new Vector4(m.Row3.X, m.Row3.Y, m.Row3.Z, m.Row3.W);
+			//			m.ClearRotation();
+			//			m.Column1 = modelview.Column1;
+			//
+			simpleTexturedShader.ModelViewMatrix = m;
+
+			//simpleTexturedShader.ModelMatrix = Matrix4.CreateTranslation (100, 100, 0);
+			simpleTexturedShader.Enable ();
+			GL.BindTexture (TextureTarget.Texture2D, treeTex);
+			tree.Render (PrimitiveType.TriangleStrip);
+			GL.BindTexture (TextureTarget.Texture2D, 0);
+			simpleTexturedShader.ModelViewMatrix = modelview;
+			simpleTexturedShader.ModelMatrix = Matrix4.Identity;
+
+			objShader.Enable ();
+			heolienne.Render (PrimitiveType.Triangles, 10000);			
+		}
+		void testDynShaders()
+		{
+			DynamicShader ds = new DynamicShader() { 
+				floatPrecision = DynamicShader.Precision.highp 
+			};
+			ds.VertexAttributes.Add(new ShaderData(typeof(Vector3), "in_position"));
+
+			ShaderData<Matrix4> sdProjection = new ShaderData<Matrix4> ("projection");
+			ShaderData<Matrix4> sdModelView = new ShaderData<Matrix4> ("modelView");
+			ShaderData<Matrix4> sdModel = new ShaderData<Matrix4> ("model");
+
+			ds.Uniforms.Add (sdProjection);
+			ds.Uniforms.Add (sdModelView);
+			ds.Uniforms.Add (sdModel);
+			ds.Uniforms.Add(new ShaderData<Vector4>("lightPos"));
+			ds.Uniforms.Add(new ShaderData<float>("heightScale"));
+			ds.Uniforms.Add(new ShaderData<Vector2>("mapSize"));
+
+			ds.Compile ();
 		}
 
 		#endregion
 
 		string[] groundTextures = new string[]
-		{
+		{			
 			"#Ottd3D.images.grass2.jpg",
 			"#Ottd3D.images.grass.jpg",
 			"#Ottd3D.images.brownRock.jpg",
@@ -214,52 +311,8 @@ namespace Ottd3D
 
 		public string[] GroundTextures { get { return groundTextures; }}
 
-		vaoMesh gridMesh;
+		vaoMesh grid;
 		vaoMesh selMesh;
-
-		Tetra.IndexedVAO<Vector3> landItemsVao;
-		vaoMesh heolienne;
-		int heolienneTex;
-		vaoMesh tree;
-		int treeTex;
-		vaoMesh pinetree;
-		int pinetreeTex;
-
-		List<Vector3> track = new List<Vector3>();
-		Point<int> selCase;
-		vaoMesh trackMesh;
-
-		void updateTrackMesh(){
-			if (trackMesh != null)
-				trackMesh.Dispose ();
-
-			List<Vector3> tp = new List<Vector3> ();
-
-			Vector3[] p = new Vector3[4];
-			const int resolution = 10;
-
-			for (int i = 0; i < track.Count-1; i++) {
-				p [0] = track [i];
-				p [3] = track [i+1];
-
-				if (p [0].X != p [3].X) {
-					if (p [0].Y != p [3].Y) {
-						p [1].X = p [0].X;
-						p [1].Y = p [3].Y;
-						p [1].Z = (p [0].Z + p [3].Z) / 2f;
-						p [2].X = p [0].X;
-						p [2].Y = p [3].Y;
-						p [2].Z = (p [0].Z + p [3].Z) / 2f;
-						for (int j = 0; j < resolution-1; j++) {
-							float t = (float)j / (float)(resolution-1);
-							tp.Add(Path.CalculateBezierPoint (t, p [0], p [1], p [2], p [3]));
-						}
-					}
-				}
-			}
-
-			trackMesh = new vaoMesh (tp.ToArray (), null, null);
-		}
 
 		public void initGrid()
 		{
@@ -290,12 +343,12 @@ namespace Ottd3D
 				}
 			}
 
-			gridMesh = new vaoMesh (positionVboData, texVboData, null);
-			gridMesh.indices = indicesVboData;
+			grid = new vaoMesh (positionVboData, texVboData, null);
+			grid.indices = indicesVboData;
 
-			Tetra.Texture.DefaultWrapMode = TextureWrapMode.Repeat;
-			gridShader.DiffuseTexture = Tetra.Texture.Load (TextureTarget.Texture2DArray, groundTextures);
-			Tetra.Texture.DefaultWrapMode = TextureWrapMode.Clamp;
+			Texture.DefaultWrapMode = TextureWrapMode.Repeat;
+			gridShader.DiffuseTexture = Texture.Load (TextureTarget.Texture2DArray, groundTextures);
+			Texture.DefaultWrapMode = TextureWrapMode.Clamp;
 		}
 		void drawGrid()
 		{
@@ -358,7 +411,7 @@ namespace Ottd3D
 			splatTextureIsUpToDate = true;
 		QuadVAO cacheQuad;
 		Matrix4 cacheProjection;
-		int gridCacheTex, gridSelectionTex;
+		Texture gridCacheTex, gridSelectionTex;
 		int fboGrid, depthRenderbuffer;
 		DrawBuffersEnum[] dbe = new DrawBuffersEnum[]
 		{
@@ -402,9 +455,12 @@ namespace Ottd3D
 			System.Drawing.Size cz = ClientRectangle.Size;
 
 			gridCacheTex = new Texture (cz.Width, cz.Height);
-			gridSelectionTex = new Texture (cz.Width, cz.Height);
 
-			Texture.SetTexFilterNeareast (gridSelectionTex);
+			Texture.DefaultMagFilter = TextureMagFilter.Nearest;
+			Texture.DefaultMinFilter = TextureMinFilter.Nearest;
+			gridSelectionTex = new Texture (cz.Width, cz.Height);
+			Texture.DefaultMagFilter = TextureMagFilter.Linear;
+			Texture.DefaultMinFilter = TextureMinFilter.Linear;
 
 
 			// Create Depth Renderbuffer
@@ -442,24 +498,14 @@ namespace Ottd3D
 			GL.Disable (EnableCap.AlphaTest);
 			GL.Disable (EnableCap.Blend);
 
-			gridMesh.Render(PrimitiveType.TriangleStrip, gridMesh.indices);
-
-			GL.DrawBuffers(1, new DrawBuffersEnum[]{DrawBuffersEnum.ColorAttachment0});
-			GL.DepthMask (false);
-			GL.Enable (EnableCap.AlphaTest);
-			GL.Enable (EnableCap.Blend);
-			GL.BlendFunc(BlendingFactorSrc.SrcAlpha, BlendingFactorDest.OneMinusSrcAlpha);
-			objShader.DiffuseTexture = pinetreeTex;
-			objShader.Enable ();
-			pinetree.Render (PrimitiveType.Triangles, instances * instances);
-
-			heolienne.Render (PrimitiveType.Triangles, instances * instances);
-			GL.DepthMask (true);
+			grid.Render(PrimitiveType.TriangleStrip, grid.indices);
 
 			GL.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
 			GL.DrawBuffer(DrawBufferMode.Back);
 			getSelectionTextureData ();
 
+			GL.Enable (EnableCap.AlphaTest);
+			GL.Enable (EnableCap.Blend);
 
 			gridCacheIsUpToDate = true;
 		}
@@ -478,13 +524,6 @@ namespace Ottd3D
 
 			updateShadersMatrices ();
 
-			if (tDepthSort != null) {
-				killDepthSortThread ();
-			}
-			tDepthSort = new Thread (depthSortThread);
-			tDepthSort.IsBackground = true;
-			tDepthSort.Start ();
-
 			gridCacheIsUpToDate = false;
 		}			
 			
@@ -494,8 +533,7 @@ namespace Ottd3D
 
 		void updatePtrHm()
 		{
-			selCase = new Point<int> ((int)Math.Round (SelectionPos.X), (int)Math.Round (SelectionPos.Y));
-			ptrHM = (selCase.X + selCase.Y * _hmSize) * 4 ;
+			ptrHM = ((int)Math.Round(SelectionPos.X) + (int)Math.Round(SelectionPos.Y) * _hmSize) * 4 ;
 			NotifyValueChange ("PtrHM", ptrHM);
 		}
 
@@ -519,11 +557,10 @@ namespace Ottd3D
 				int selPtr = (e.X * 4 + (ClientRectangle.Height - e.Y) * ClientRectangle.Width * 4);
 				//				SelectionPos = new Vector3 (selectionMap [selPtr], 
 				//					selectionMap [selPtr + 1], selectionMap [selPtr + 2]);
-				if (selPtr + 3 < selectionMap.Length) {
-					SelectionPos = new Vector3 (
-						(float)selectionMap [selPtr] + (float)selectionMap [selPtr + 1] / 255f, 
-						(float)selectionMap [selPtr + 2] + (float)selectionMap [selPtr + 3] / 255f, 0f);
-				}
+				SelectionPos = new Vector3 (
+					(float)selectionMap [selPtr] + (float)selectionMap [selPtr + 1] / 255f, 
+					(float)selectionMap [selPtr + 2] + (float)selectionMap [selPtr + 3] / 255f, 0f);
+
 				updatePtrHm ();
 
 				if (e.Mouse.MiddleButton == OpenTK.Input.ButtonState.Pressed) {
@@ -563,17 +600,9 @@ namespace Ottd3D
 				eyeDistTarget = zFar-100;
 			Animation.StartAnimation(new Animation<float> (this, "EyeDist", eyeDistTarget, (eyeDistTarget - eyeDist) * 0.2f));
 		}
-
 		void Mouse_ButtonUp (object sender, MouseButtonEventArgs e)
 		{
-			const int resolution = 10;
-			if (e.Button == MouseButton.Left) {
-				for (int i = 0; i < resolution; i++) {
-					
-				}
-				track.Add (new Vector3 ((float)Math.Floor (selPos.X) + 0.5f, (float)Math.Floor (selPos.Y) + 0.5f, SelectionPos.Z));
-				updateTrackMesh ();
-			}
+			
 		}
 		#endregion
 
@@ -587,114 +616,13 @@ namespace Ottd3D
 		}
 		#endregion
 
-		const int instances = 40;
-
-		volatile bool updateMatrices = false;
-
-		void matRotThread()
-		{
-			while (true) {
-				if (updateMatrices) {
-					Thread.Sleep (1);
-					continue;
-				}
-				for (int i = 0; i < instances; i++) {
-					for (int j = 0; j < instances; j++) {
-						heolienne.modelMats [i*instances+j] *= Matrix4.CreateRotationZ(0.01f);
-					}
-					//modMats [i] = Matrix4.Identity;
-				}				
-				updateMatrices = true;
-			}
-		}
-
 		protected override void OnLoad (EventArgs e)
 		{
 			base.OnLoad (e);
 
+			//initTestMesh ();
+
 			initInterface ();
-
-			#region test tree init
-				const float tsize = 5;
-				tree = new vaoMesh (
-					new Vector3[] {
-						new Vector3 (-tsize/2f, 0, 0),
-						new Vector3 (-tsize/2f, 0, tsize),
-						new Vector3 (tsize/2f, 0, 0),
-						new Vector3 (tsize/2f, 0, tsize),
-						//					new Vector3 (0, -tsize/2f, -tsize/2f),
-						//					new Vector3 (0, -tsize/2f, tsize/2f),
-						//					new Vector3 (0, tsize/2f, -tsize/2f),
-						//					new Vector3 (0, tsize/2f, tsize/2f)
-					},
-					new Vector2[] {
-						new Vector2 (0, 0),
-						new Vector2 (0, 1),
-						new Vector2 (1, 0),
-						new Vector2 (1, 1),
-						//					new Vector2 (1, 0),
-						//					new Vector2 (1, 1),
-						//					new Vector2 (0, 0),
-						//					new Vector2 (0, 1)
-					},
-					new Vector3[] {
-						new Vector3 (0, 1, 0),
-						new Vector3 (0, 1, 0),
-						new Vector3 (0, 1, 0),
-						new Vector3 (0, 1, 0),
-						//					new Vector3 (1, 0, 0),
-						//					new Vector3 (1, 0, 0),
-						//					new Vector3 (1, 0, 0),
-						//					new Vector3 (1, 0, 0)
-					},
-					null
-				);
-				
-				treeTex = Tetra.Texture.Load ("#Ottd3D.images.trees.tree1.png");
-			#endregion
-
-			Tetra.Mesh<Vector3> tmp = Tetra.OBJMeshLoader.Load ("#Ottd3D.images.trees.obj__pinet1.obj");
-			Random rnd = new Random ();
-			Matrix4[] modMats = new Matrix4[instances*instances];
-
-			const float treezone = 64;
-			Matrix4 rot = Matrix4.CreateRotationX (MathHelper.PiOver2);
-			for (int i = 0; i < instances; i++) {
-				for (int j = 0; j < instances; j++) {
-					Vector2 pos = new Vector2 ((float)rnd.NextDouble() * treezone, (float)rnd.NextDouble() * treezone);
-					float scale = (float)rnd.NextDouble () * 0.002f + 0.004f;
-					modMats [i*instances+j] =rot * Matrix4.CreateScale (scale)* Matrix4.CreateTranslation(pos.X, pos.Y, 0f);
-				}
-				//modMats [i] = Matrix4.Identity;
-			}
-
-
-			pinetree = new vaoMesh (tmp.Positions, tmp.TexCoords, tmp.Normals, tmp.Indices,modMats);
-			pinetreeTex = Tetra.Texture.Load("#Ottd3D.images.trees.pinet1.png");
-
-
-
-			#region test IndexedVAO
-//			landItemsVao = new Tetra.IndexedVAO<Vector3> ();
-//			Tetra.VAOItem vaoi = landItemsVao.Add (Tetra.OBJMeshLoader.Load ("Meshes/heolienne.obj"));
-//			vaoi.modelMats = new Matrix4[200];
-//			for (int i = 0; i < vaoi.modelMats.Length; i++) {
-//				vaoi.modelMats [i] = Matrix4.CreateTranslation ((float)i * 2f + 0.5f, (float)i * 2f + 0.5f, 0);
-//			}
-//			landItemsVao.BuildBuffers ();
-//			vaoi.UpdateInstancesData ();
-			#endregion
-
-			tmp = Tetra.OBJMeshLoader.Load ("Meshes/heolienne.obj");
-			modMats = new Matrix4[instances*instances];
-			for (int i = 0; i < instances; i++) {
-				for (int j = 0; j < instances; j++) {
-					modMats [i*instances+j] = Matrix4.CreateTranslation((float)i * 2f + 0.5f, (float)j * 2f + 0.5f,0f);
-				}
-				//modMats [i] = Matrix4.Identity;
-			}
-			heolienne = new vaoMesh (tmp.Positions, tmp.TexCoords, tmp.Normals, tmp.Indices, modMats);
-			heolienneTex = new Texture(groundTextures[3]);
 
 			initShaders ();
 
@@ -715,38 +643,8 @@ namespace Ottd3D
 			hmData = new byte[_hmSize*_hmSize*4];
 			getHeightMapData ();
 
-			Thread t = new Thread (matRotThread);
-			t.IsBackground = true;
-			t.Start ();
 		}
 			
-		volatile bool depthSortingDone = false;
-		Thread tDepthSort;
-
-		[SecurityPermissionAttribute(SecurityAction.Demand, ControlThread = true)]
-		void killDepthSortThread()
-		{
-			tDepthSort.Abort();
-			tDepthSort.Join ();
-		}
-
-		void depthSortThread()
-		{
-			try {
-				depthSort (pinetree);
-			} catch (Exception ex) {
-				return;
-			}
-			depthSortingDone = true;
-		}
-		void depthSort(vaoMesh mesh)
-		{
-			Vector3 vEye = vEyeTarget + vLook * eyeDist;
-			Array.Sort(mesh.modelMats,
-				delegate(Matrix4 x, Matrix4 y) { return (new Vector2(y.Row3.X, y.Row3.Y) - vEye.Xy).LengthFast.
-					CompareTo	((new Vector2(x.Row3.X, x.Row3.Y) - vEye.Xy).LengthFast); });
-			
-		}
 		private int frameCpt = 0;
 		protected override void OnUpdateFrame (FrameEventArgs e)
 		{
@@ -764,7 +662,7 @@ namespace Ottd3D
 
 
 			if (Keyboard [Key.ShiftLeft]) {
-				float MoveSpeed = 10f;
+				float MoveSpeed = 1f;
 				//light movment
 				if (Keyboard [Key.Up])
 					vLight.X -= MoveSpeed;
@@ -778,21 +676,8 @@ namespace Ottd3D
 					vLight.Z += MoveSpeed;
 				else if (Keyboard [Key.PageDown])
 					vLight.Z -= MoveSpeed;
-				gridShader.LightPos = Vector4.Transform(vLight, modelview);
 				gridCacheIsUpToDate = false;
 				//GL.Light (LightName.Light0, LightParameter.Position, vLight);
-			}
-
-			if (updateMatrices) {
-				heolienne.UpdateModelsMat ();
-				updateMatrices = false;
-				gridCacheIsUpToDate = false;
-			}
-
-			if (depthSortingDone) {
-				pinetree.UpdateModelsMat ();
-				depthSortingDone = false;
-				gridCacheIsUpToDate = false;
 			}
 
 			if (heightMapIsUpToDate)
@@ -815,41 +700,7 @@ namespace Ottd3D
 			drawGrid ();
 			drawHoverCase ();
 
-
-
-
-			if (trackMesh != null)
-				trackMesh.Render (PrimitiveType.LineStrip);
-
-			//drawTestTrees ();
-
-
-//			landItemsVao.Bind();
-//			landItemsVao.Render (PrimitiveType.Triangles, landItemsVao.Meshes [0]);
-//			landItemsVao.Unbind ();
-		}
-
-		void drawTestTrees()
-		{
-			Matrix4 m = simpleTexturedShader.ModelViewMatrix;
-			m.Column0 = Vector4.UnitX;
-			//m.Column1 = Vector4.UnitY;
-			m.Column2 = Vector4.UnitY;
-			//m.Column3 = new Vector4(m.Column3.X, m.Column3.Y, 0f, m.Column3.W);
-			m.Row3 = modelview.Row3;
-			//m.Row3 = new Vector4(m.Row3.X, m.Row3.Y, m.Row3.Z, m.Row3.W);
-			//			m.ClearRotation();
-			//			m.Column1 = modelview.Column1;
-			//
-			simpleTexturedShader.ModelViewMatrix = m;
-
-			//simpleTexturedShader.ModelMatrix = Matrix4.CreateTranslation (100, 100, 0);
-			simpleTexturedShader.Enable ();
-			GL.BindTexture (TextureTarget.Texture2D, treeTex);
-			tree.Render (PrimitiveType.TriangleStrip);
-			GL.BindTexture (TextureTarget.Texture2D, 0);
-			simpleTexturedShader.ModelViewMatrix = modelview;
-			simpleTexturedShader.ModelMatrix = Matrix4.Identity;		
+			//drawingTests ();
 		}
 
 		#region Main and CTOR

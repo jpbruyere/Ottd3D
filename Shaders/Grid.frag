@@ -3,13 +3,14 @@ precision highp float;
 
 uniform sampler2DArray tex;
 uniform sampler2D splatTex;
+uniform vec4 lightPos;
+uniform vec4 fogColor;
 
 in vec2 texCoord;
 in vec2 splatTexCoord;
 //flat in float layer;
 in vec3 n;
-in vec3 v;
-in vec3 lpos;
+in vec4 vEyeSpacePos;
 in vec4 vertex;
 
 layout(location = 0) out vec4 out_frag_color;
@@ -25,11 +26,36 @@ vec2 EncodeFloatRGBA( float v ) {
 //float DecodeFloatRGBA( float4 rgba ) {
 //  return dot( rgba, float4(1.0, 1/255.0, 1/65025.0, 1/160581375.0) );
 //}
+float fStart = 1.0; // This is only for linear fog
+float fEnd = 200.0; // This is only for linear fog
+float fDensity = 1.0; // For exp and exp2 equation
+   
+int iEquation = 0; // 0 = linear, 1 = exp, 2 = exp2
+
+float getFogFactor(float fFogCoord)
+{
+   float fResult = 0.0;
+   if(iEquation == 0)
+      fResult = (fEnd-fFogCoord)/(fEnd-fStart);
+   else if(iEquation == 1)
+      fResult = exp(-fDensity*fFogCoord);
+   else if(iEquation == 2)
+      fResult = exp(-pow(fDensity*fFogCoord, 2.0));
+      
+   fResult = 1.0-clamp(fResult, 0.0, 1.0);
+   
+   return fResult;
+}
 
 void main(void)
 {
 	
-	vec3 l = normalize(lpos-v);
+	vec3 l;
+	if (lightPos.w == 0.0)
+		l = normalize(-lightPos.xyz);
+	else
+		l = normalize(lightPos.xyz - vEyeSpacePos.xyz);
+
 	float nl = clamp(max(dot(n,l), 0.0),0.7,1.0);
 
 	vec4 splat = texture (splatTex, splatTexCoord);
@@ -37,10 +63,13 @@ void main(void)
 	vec3 t1 = texture( tex, vec3(texCoord, splat.r * 255.0)).rgb;
 	vec3 t2 = texture( tex, vec3(texCoord, splat.g * 255.0)).rgb;
 
-	vec3 c = mix (t1, t2, splat.b);
+	vec4 c = vec4(mix (t1, t2, splat.b) * nl, 1.0);
 
-	out_frag_color = vec4(c * nl, 1.0);
+	// Add fog
+   float fFogCoord = abs(vEyeSpacePos.z/vEyeSpacePos.w);
 
+	out_frag_color = //vec4(c, 1.0);
+		mix(c, fogColor, getFogFactor(fFogCoord)); 
 //	ivec2 i = floatBitsToInt(vertex.xy);
 //	vec4 res = intBitsToFloat(ivec4(i.x , i.y , 1, 1));
 //	int x = floatBitsToInt(vertex.x);
@@ -50,8 +79,6 @@ void main(void)
 	//out_frag_selection = vertex;
 	//out_frag_selection = vec4(vertex.x, fract(vertex.x * 255.0), vertex.y, 1.0);
 
-	vec2 resx = EncodeFloatRGBA(vertex.x);
-	vec2 resy = EncodeFloatRGBA(vertex.y);
-	out_frag_selection = vec4(resx, resy);
+	out_frag_selection = vec4(EncodeFloatRGBA(vertex.x), EncodeFloatRGBA(vertex.y));
 }
 
