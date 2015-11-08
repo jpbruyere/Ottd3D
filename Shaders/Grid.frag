@@ -1,14 +1,27 @@
 #version 330
-precision highp float;
+precision mediump float;
+
+layout (std140, index = 0) uniform block_data{
+	mat4 Projection;
+	mat4 ModelView;
+	mat4 Normal;
+	vec4 lightPos;
+	vec4 Color;
+};
+layout (std140, index = 10) uniform fogData
+{ 
+	vec4 fogColor;
+	float fStart; // This is only for linear fog
+	float fEnd; // This is only for linear fog
+	float fDensity; // For exp and exp2 equation   
+	int iEquation; // 0 = linear, 1 = exp, 2 = exp2
+};
 
 uniform sampler2DArray tex;
 uniform sampler2D splatTex;
-uniform vec4 lightPos;
-uniform vec4 fogColor;
 
 in vec2 texCoord;
 in vec2 splatTexCoord;
-//flat in float layer;
 in vec3 n;
 in vec4 vEyeSpacePos;
 in vec4 vertex;
@@ -23,15 +36,7 @@ vec2 EncodeFloatRGBA( float v ) {
   enc -= enc.yy * vec2(1.0/255.0,0.0);
   return enc;
 }
-//float DecodeFloatRGBA( float4 rgba ) {
-//  return dot( rgba, float4(1.0, 1/255.0, 1/65025.0, 1/160581375.0) );
-//}
-float fStart = 1.0; // This is only for linear fog
-float fEnd = 200.0; // This is only for linear fog
-float fDensity = 1.0; // For exp and exp2 equation
    
-int iEquation = 0; // 0 = linear, 1 = exp, 2 = exp2
-
 float getFogFactor(float fFogCoord)
 {
    float fResult = 0.0;
@@ -68,8 +73,7 @@ void main(void)
 	// Add fog
    float fFogCoord = abs(vEyeSpacePos.z/vEyeSpacePos.w);
 
-	out_frag_color = //vec4(c, 1.0);
-		mix(c, fogColor, getFogFactor(fFogCoord)); 
+	out_frag_color = mix(c, fogColor, getFogFactor(fFogCoord)); 
 //	ivec2 i = floatBitsToInt(vertex.xy);
 //	vec4 res = intBitsToFloat(ivec4(i.x , i.y , 1, 1));
 //	int x = floatBitsToInt(vertex.x);

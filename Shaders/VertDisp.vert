@@ -2,10 +2,15 @@
 
 precision highp float;
 
-uniform mat4 Projection;
-uniform mat4 ModelView;
+layout (std140, index = 0) uniform block_data{
+	mat4 Projection;
+	mat4 ModelView;
+	mat4 Normal;
+	vec4 lightPos;
+	vec4 Color;
+};
+
 uniform mat4 Model;
-uniform mat4 Normal;
 
 uniform vec2 mapSize;
 uniform float heightScale;
@@ -56,7 +61,7 @@ void main(void)
 	  + normalize(cross(pos[4] - pos[0], pos[3] - pos[2])) 
 	  + normalize(cross(pos[1] - pos[0], pos[4] - pos[2])) / 4.0), 0.0)).xyz;
 
-	vEyeSpacePos = ModelView * Model * vec4(pos[0], 1);
+	vEyeSpacePos = ModelView *  vec4(pos[0], 1);
 	vertex = vec4((pos[0].xy) / (mapSize-vec2(1.0,1.0)), pos[0].z / heightScale, 1.0);
 	gl_Position = Projection * vEyeSpacePos;
 }

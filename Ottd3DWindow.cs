@@ -28,13 +28,34 @@ namespace Ottd3D
 		}
 
 		[StructLayout(LayoutKind.Sequential)]
-		public struct UBOData
+		public struct UBOSharedData
 		{
-			Matrix4 projection;
-			Matrix4 view;
-			Matrix4 model;
-			Vector4 LightPosition;
-			Vector4 Color;
+			public Matrix4 projection;
+			public Matrix4 view;
+			public Matrix4 normal;
+			public Vector4 LightPosition;
+			public Vector4 Color;
+		}
+
+		[StructLayout(LayoutKind.Sequential)]
+		public struct UBOFogData
+		{
+			public Vector4 fogColor;
+			public float fStart; // This is only for linear fog
+			public float fEnd; // This is only for linear fog
+			public float fDensity; // For exp and exp2 equation   
+			public int iEquation; // 0 = linear, 1 = exp, 2 = exp2
+
+			public static UBOFogData CreateUBOFogData()
+			{
+				UBOFogData tmp;
+				tmp.fogColor = new Vector4(0.7f,0.7f,0.7f,1.0f);
+				tmp.fStart = 100.0f; // This is only for linear fog
+				tmp.fEnd = 300.0f; // This is only for linear fog
+				tmp.fDensity = 0.004f; // For exp and exp2 equation   
+				tmp.iEquation = 1; // 0 = linear, 1 = exp, 2 = exp2
+				return tmp;
+			}
 		}
 
 		const int _gridSize = 256;
@@ -104,7 +125,7 @@ namespace Ottd3D
 		}
 		public Vector3 vEyeTarget = new Vector3(32, 32, 0f);
 		public Vector3 vLook = Vector3.Normalize(new Vector3(-1f, -1f, 1f));  // Camera vLook Vector
-		public float zFar = 150.0f;
+		public float zFar = 500.0f;
 		public float zNear = 0.1f;
 		public float fovY = (float)Math.PI / 4;
 
@@ -115,6 +136,10 @@ namespace Ottd3D
 		float RotationSpeed = 0.01f;
 
 		public Vector4 vLight = new Vector4 (0.5f, 0.5f, -1, 0);
+
+		UBOSharedData shaderSharedData;
+		UBOFogData fogData;
+		int uboShaderSharedData, uboFogData;
 		#endregion
 
 		Vector3 selPos = Vector3.Zero;
@@ -137,11 +162,11 @@ namespace Ottd3D
 
 		#region Shaders
 		public static CircleShader circleShader;
-		public static GameLib.VertexDispShader gridShader;
+		public static Ottd3D.VertexDispShader gridShader;
 		public static GameLib.Shader simpleTexturedShader;
 		public static go.GLBackend.TexturedShader CacheRenderingShader;
 
-		public static SingleLightShader objShader;
+		public static Tetra.Mat4InstancedShader objShader;
 
 		void initShaders()
 		{
@@ -149,7 +174,7 @@ namespace Ottd3D
 			circleShader.Color = Color.White;
 			circleShader.Radius = 0.01f;
 
-			gridShader = new GameLib.VertexDispShader ("Ottd3D.Shaders.VertDisp.vert", "Ottd3D.Shaders.Grid.frag");
+			gridShader = new Ottd3D.VertexDispShader ("Ottd3D.Shaders.VertDisp.vert", "Ottd3D.Shaders.Grid.frag");
 
 			simpleTexturedShader = new GameLib.Shader ();
 			CacheRenderingShader = new go.GLBackend.TexturedShader();			
@@ -160,35 +185,49 @@ namespace Ottd3D
 			gridShader.DisplacementMap = new Texture ("heightmap.png",false);
 			gridShader.MapSize = new Vector2 (_gridSize, _gridSize);
 			gridShader.HeightScale = heightScale;
-			gridShader.FogColor = new Vector4 (0.7f,0.7f,0.7f,1f);
 
 			gridShader.SplatTexture = new Texture ("splat.png",false);
 
 			Texture.SetTexFilterNeareast (gridShader.DisplacementMap);
 			Texture.SetTexFilterNeareast (gridShader.SplatTexture);
 
-			objShader = new SingleLightShader ();
-			objShader.Color = Color.White;
-			objShader.LightPos = vLight;
+			objShader = new Tetra.Mat4InstancedShader ();
 			objShader.DiffuseTexture = heolienneTex;
-			objShader.DisplacementMap = gridShader.DisplacementMap;
-			objShader.MapSize = new Vector2 (_gridSize, _gridSize);
-			objShader.HeightScale = heightScale;
+
+			shaderSharedData.Color = Color.White;
+			uboShaderSharedData = GL.GenBuffer ();
+			GL.BindBuffer (BufferTarget.UniformBuffer, uboShaderSharedData);
+			GL.BufferData(BufferTarget.UniformBuffer,Marshal.SizeOf(shaderSharedData),
+					ref shaderSharedData, BufferUsageHint.DynamicCopy);
+			GL.BindBuffer (BufferTarget.UniformBuffer, 0);
+			GL.BindBufferBase (BufferTarget.UniformBuffer, 0, uboShaderSharedData);
+
+			fogData = UBOFogData.CreateUBOFogData();
+			uboFogData = GL.GenBuffer ();
+			GL.BindBuffer (BufferTarget.UniformBuffer, uboFogData);
+			GL.BufferData(BufferTarget.UniformBuffer,Marshal.SizeOf(fogData),
+				ref fogData, BufferUsageHint.StaticCopy);
+			GL.BindBuffer (BufferTarget.UniformBuffer, 0);
+			GL.BindBufferBase (BufferTarget.UniformBuffer, 10, uboFogData);
+
+
 		}
 
 		void updateShadersMatrices(){
-			gridShader.ProjectionMatrix = projection;
-			gridShader.ModelViewMatrix = modelview;
-			gridShader.ModelMatrix = Matrix4.Identity;
-			gridShader.LightPos = Vector4.Transform(vLight, modelview);
-
 			simpleTexturedShader.ProjectionMatrix = projection;
 			simpleTexturedShader.ModelViewMatrix = modelview;
 			simpleTexturedShader.ModelMatrix = Matrix4.Identity;
 
-			objShader.ProjectionMatrix = projection;
-			objShader.ModelViewMatrix = modelview;
-			objShader.ModelMatrix = Matrix4.Identity;//Matrix4.CreateTranslation (40.5f, 40.5f, 0);
+			shaderSharedData.projection = projection;
+			shaderSharedData.view = modelview;
+			shaderSharedData.normal = modelview.Inverted();
+			shaderSharedData.normal.Transpose ();
+			shaderSharedData.LightPosition = Vector4.Transform(vLight, modelview);
+
+			GL.BindBuffer (BufferTarget.UniformBuffer, uboShaderSharedData);
+			GL.BufferData(BufferTarget.UniformBuffer,Marshal.SizeOf(shaderSharedData),
+				ref shaderSharedData, BufferUsageHint.DynamicCopy);
+			GL.BindBuffer (BufferTarget.UniformBuffer, 0);
 		}
 
 		#endregion
@@ -445,16 +484,22 @@ namespace Ottd3D
 			gridMesh.Render(PrimitiveType.TriangleStrip, gridMesh.indices);
 
 			GL.DrawBuffers(1, new DrawBuffersEnum[]{DrawBuffersEnum.ColorAttachment0});
+
+			objShader.DiffuseTexture = heolienneTex;
+			//objShader.DiffuseTexture = pinetreeTex;
+			objShader.Enable ();
+
+			heolienne.Render (PrimitiveType.Triangles, instances*instances);
+
 			GL.DepthMask (false);
 			GL.Enable (EnableCap.AlphaTest);
 			GL.Enable (EnableCap.Blend);
 			GL.BlendFunc(BlendingFactorSrc.SrcAlpha, BlendingFactorDest.OneMinusSrcAlpha);
-			objShader.DiffuseTexture = pinetreeTex;
-			objShader.Enable ();
-			pinetree.Render (PrimitiveType.Triangles, instances * instances);
 
-			heolienne.Render (PrimitiveType.Triangles, instances * instances);
+			GL.BindTexture(TextureTarget.Texture2D,pinetreeTex);
+			pinetree.Render (PrimitiveType.Triangles, instances * instances);
 			GL.DepthMask (true);
+
 
 			GL.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
 			GL.DrawBuffer(DrawBufferMode.Back);
@@ -587,7 +632,7 @@ namespace Ottd3D
 		}
 		#endregion
 
-		const int instances = 40;
+		const int instances = 50;
 
 		volatile bool updateMatrices = false;
 
@@ -610,7 +655,18 @@ namespace Ottd3D
 
 		protected override void OnLoad (EventArgs e)
 		{
+
 			base.OnLoad (e);
+
+//			int ext = 0;
+//			string strExt = "Extensions: ";
+//
+//			do {
+//				Debug.WriteLine (strExt);
+//				strExt = GL.GetString (StringName.Extensions, ext);
+//				ext++;
+//			} while (!string.IsNullOrEmpty (strExt));
+
 
 			initInterface ();
 
@@ -657,7 +713,7 @@ namespace Ottd3D
 			Random rnd = new Random ();
 			Matrix4[] modMats = new Matrix4[instances*instances];
 
-			const float treezone = 64;
+			const float treezone = 256;
 			Matrix4 rot = Matrix4.CreateRotationX (MathHelper.PiOver2);
 			for (int i = 0; i < instances; i++) {
 				for (int j = 0; j < instances; j++) {
@@ -685,16 +741,18 @@ namespace Ottd3D
 //			vaoi.UpdateInstancesData ();
 			#endregion
 
-			tmp = Tetra.OBJMeshLoader.Load ("Meshes/heolienne.obj");
+			//tmp = Tetra.OBJMeshLoader.Load ("Meshes/heolienne14.obj");
+			tmp = Tetra.OBJMeshLoader.Load ("/mnt/data/blender/ottd3d/heolienne.obj");
 			modMats = new Matrix4[instances*instances];
 			for (int i = 0; i < instances; i++) {
 				for (int j = 0; j < instances; j++) {
-					modMats [i*instances+j] = Matrix4.CreateTranslation((float)i * 2f + 0.5f, (float)j * 2f + 0.5f,0f);
+					Vector2 pos = new Vector2 ((float)rnd.Next(0,(int)treezone), (float)rnd.Next(0,(int)treezone));
+					modMats [i * instances + j] = Matrix4.CreateTranslation (pos.X + 0.5f, pos.Y + 0.5f, 0f);
 				}
 				//modMats [i] = Matrix4.Identity;
 			}
 			heolienne = new vaoMesh (tmp.Positions, tmp.TexCoords, tmp.Normals, tmp.Indices, modMats);
-			heolienneTex = new Texture(groundTextures[3]);
+			heolienneTex = new Texture("/mnt/data/blender/ottd3d/heolienne.png");
 
 			initShaders ();
 
@@ -715,9 +773,9 @@ namespace Ottd3D
 			hmData = new byte[_hmSize*_hmSize*4];
 			getHeightMapData ();
 
-			Thread t = new Thread (matRotThread);
-			t.IsBackground = true;
-			t.Start ();
+//			Thread t = new Thread (matRotThread);
+//			t.IsBackground = true;
+//			t.Start ();
 		}
 			
 		volatile bool depthSortingDone = false;
@@ -778,16 +836,16 @@ namespace Ottd3D
 					vLight.Z += MoveSpeed;
 				else if (Keyboard [Key.PageDown])
 					vLight.Z -= MoveSpeed;
-				gridShader.LightPos = Vector4.Transform(vLight, modelview);
+				updateShadersMatrices ();
 				gridCacheIsUpToDate = false;
 				//GL.Light (LightName.Light0, LightParameter.Position, vLight);
 			}
 
-			if (updateMatrices) {
-				heolienne.UpdateModelsMat ();
-				updateMatrices = false;
-				gridCacheIsUpToDate = false;
-			}
+//			if (updateMatrices) {
+//				heolienne.UpdateModelsMat ();
+//				updateMatrices = false;
+//				gridCacheIsUpToDate = false;
+//			}
 
 			if (depthSortingDone) {
 				pinetree.UpdateModelsMat ();
@@ -814,9 +872,6 @@ namespace Ottd3D
 		{
 			drawGrid ();
 			drawHoverCase ();
-
-
-
 
 			if (trackMesh != null)
 				trackMesh.Render (PrimitiveType.LineStrip);

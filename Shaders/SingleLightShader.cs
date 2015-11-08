@@ -12,7 +12,7 @@ namespace Ottd3D
 		{
 			vertSource = @"
 			#version 330
-			precision highp float;
+			precision lowp float;
 
 			uniform mat4 Projection;
 			uniform mat4 ModelView;
@@ -62,7 +62,7 @@ namespace Ottd3D
 			fragSource = @"
 			#version 330			
 
-			precision highp float;
+			precision lowp float;
 
 			uniform vec4 color;
 			uniform sampler2D tex;

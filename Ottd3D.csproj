@@ -21,6 +21,7 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <ConsolePause>false</ConsolePause>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|Linux_x86' ">
     <Optimize>true</Optimize>
@@ -29,6 +30,7 @@
     <WarningLevel>4</WarningLevel>
     <ConsolePause>false</ConsolePause>
     <DefineConstants>__linux__</DefineConstants>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
@@ -49,8 +51,11 @@
     <Compile Include="Shaders\CircleShader.cs" />
     <Compile Include="Shaders\BrushShader.cs" />
     <Compile Include="Ottd3DMapEditor.cs" />
-    <Compile Include="Shaders\SingleLightShader.cs" />
     <Compile Include="Ottd3DWindow.cs" />
+    <Compile Include="SkyBox.cs" />
+    <Compile Include="Shaders\SingleLightShader.cs" />
+    <Compile Include="Shaders\Mat4InstancedShader.cs" />
+    <Compile Include="Shaders\VertexDispShader.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="ui\" />
@@ -118,5 +123,16 @@
     <None Include="Ottd3DWindow_newtextures.cs" />
     <None Include="images\trees\obj__pinet1.mtl" />
     <None Include="images\trees\pinet1.tga" />
+    <None Include="..\..\..\data\obj\heolienne14.mtl">
+      <Link>Meshes\heolienne14.mtl</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\..\..\data\obj\heolienne14.obj">
+      <Link>Meshes\heolienne14.obj</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Meshes\cubetest.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 </Project>
