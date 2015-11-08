@@ -920,7 +920,7 @@ namespace Ottd3D
 		public Ottd3DWindow ()
 			: base(1024, 800,"test")
 		{
-			//VSync = VSyncMode.On;
+			VSync = VSyncMode.Off;
 		}
 		#endregion
 	}
