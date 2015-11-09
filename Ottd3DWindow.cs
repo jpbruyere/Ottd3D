@@ -192,7 +192,7 @@ namespace Ottd3D
 			Texture.SetTexFilterNeareast (gridShader.SplatTexture);
 
 			objShader = new Tetra.Mat4InstancedShader ();
-			objShader.DiffuseTexture = heolienneTex;
+			//objShader.DiffuseTexture = heolienneTex;
 
 			shaderSharedData.Color = Color.White;
 			uboShaderSharedData = GL.GenBuffer ();
@@ -257,10 +257,6 @@ namespace Ottd3D
 		vaoMesh selMesh;
 
 		Tetra.IndexedVAO<Vector3> landItemsVao;
-		vaoMesh heolienne;
-		int heolienneTex;
-		vaoMesh tree;
-		int treeTex;
 		vaoMesh pinetree;
 		int pinetreeTex;
 
@@ -485,11 +481,11 @@ namespace Ottd3D
 
 			GL.DrawBuffers(1, new DrawBuffersEnum[]{DrawBuffersEnum.ColorAttachment0});
 
-			objShader.DiffuseTexture = heolienneTex;
-			//objShader.DiffuseTexture = pinetreeTex;
 			objShader.Enable ();
 
-			heolienne.Render (PrimitiveType.Triangles, instances*instances);
+			landItemsVao.Bind ();
+			landItemsVao.Render (PrimitiveType.Triangles);
+			landItemsVao.Unbind ();
 
 			GL.DepthMask (false);
 			GL.Enable (EnableCap.AlphaTest);
@@ -632,26 +628,26 @@ namespace Ottd3D
 		}
 		#endregion
 
-		const int instances = 50;
+		const int instances = 10;
 
 		volatile bool updateMatrices = false;
 
-		void matRotThread()
-		{
-			while (true) {
-				if (updateMatrices) {
-					Thread.Sleep (1);
-					continue;
-				}
-				for (int i = 0; i < instances; i++) {
-					for (int j = 0; j < instances; j++) {
-						heolienne.modelMats [i*instances+j] *= Matrix4.CreateRotationZ(0.01f);
-					}
-					//modMats [i] = Matrix4.Identity;
-				}				
-				updateMatrices = true;
-			}
-		}
+//		void matRotThread()
+//		{
+//			while (true) {
+//				if (updateMatrices) {
+//					Thread.Sleep (1);
+//					continue;
+//				}
+//				for (int i = 0; i < instances; i++) {
+//					for (int j = 0; j < instances; j++) {
+//						heolienne.modelMats [i*instances+j] *= Matrix4.CreateRotationZ(0.01f);
+//					}
+//					//modMats [i] = Matrix4.Identity;
+//				}				
+//				updateMatrices = true;
+//			}
+//		}
 
 		protected override void OnLoad (EventArgs e)
 		{
@@ -670,45 +666,6 @@ namespace Ottd3D
 
 			initInterface ();
 
-			#region test tree init
-				const float tsize = 5;
-				tree = new vaoMesh (
-					new Vector3[] {
-						new Vector3 (-tsize/2f, 0, 0),
-						new Vector3 (-tsize/2f, 0, tsize),
-						new Vector3 (tsize/2f, 0, 0),
-						new Vector3 (tsize/2f, 0, tsize),
-						//					new Vector3 (0, -tsize/2f, -tsize/2f),
-						//					new Vector3 (0, -tsize/2f, tsize/2f),
-						//					new Vector3 (0, tsize/2f, -tsize/2f),
-						//					new Vector3 (0, tsize/2f, tsize/2f)
-					},
-					new Vector2[] {
-						new Vector2 (0, 0),
-						new Vector2 (0, 1),
-						new Vector2 (1, 0),
-						new Vector2 (1, 1),
-						//					new Vector2 (1, 0),
-						//					new Vector2 (1, 1),
-						//					new Vector2 (0, 0),
-						//					new Vector2 (0, 1)
-					},
-					new Vector3[] {
-						new Vector3 (0, 1, 0),
-						new Vector3 (0, 1, 0),
-						new Vector3 (0, 1, 0),
-						new Vector3 (0, 1, 0),
-						//					new Vector3 (1, 0, 0),
-						//					new Vector3 (1, 0, 0),
-						//					new Vector3 (1, 0, 0),
-						//					new Vector3 (1, 0, 0)
-					},
-					null
-				);
-				
-				treeTex = Tetra.Texture.Load ("#Ottd3D.images.trees.tree1.png");
-			#endregion
-
 			Tetra.Mesh<Vector3> tmp = Tetra.OBJMeshLoader.Load ("#Ottd3D.images.trees.obj__pinet1.obj");
 			Random rnd = new Random ();
 			Matrix4[] modMats = new Matrix4[instances*instances];
@@ -725,34 +682,46 @@ namespace Ottd3D
 			}
 
 
-			pinetree = new vaoMesh (tmp.Positions, tmp.TexCoords, tmp.Normals, tmp.Indices,modMats);
+			pinetree = new vaoMesh (tmp.Positions, tmp.TexCoords, tmp.Normals,Array.ConvertAll(tmp.Indices, i=>(int)i),modMats);
 			pinetreeTex = Tetra.Texture.Load("#Ottd3D.images.trees.pinet1.png");
 
 
 
 			#region test IndexedVAO
-//			landItemsVao = new Tetra.IndexedVAO<Vector3> ();
-//			Tetra.VAOItem vaoi = landItemsVao.Add (Tetra.OBJMeshLoader.Load ("Meshes/heolienne.obj"));
-//			vaoi.modelMats = new Matrix4[200];
-//			for (int i = 0; i < vaoi.modelMats.Length; i++) {
-//				vaoi.modelMats [i] = Matrix4.CreateTranslation ((float)i * 2f + 0.5f, (float)i * 2f + 0.5f, 0);
-//			}
-//			landItemsVao.BuildBuffers ();
-//			vaoi.UpdateInstancesData ();
-			#endregion
-
-			//tmp = Tetra.OBJMeshLoader.Load ("Meshes/heolienne14.obj");
-			tmp = Tetra.OBJMeshLoader.Load ("/mnt/data/blender/ottd3d/heolienne.obj");
-			modMats = new Matrix4[instances*instances];
-			for (int i = 0; i < instances; i++) {
-				for (int j = 0; j < instances; j++) {
-					Vector2 pos = new Vector2 ((float)rnd.Next(0,(int)treezone), (float)rnd.Next(0,(int)treezone));
-					modMats [i * instances + j] = Matrix4.CreateTranslation (pos.X + 0.5f, pos.Y + 0.5f, 0f);
-				}
-				//modMats [i] = Matrix4.Identity;
+			const int nbHeol = 20, heolSpacing = 4;
+			Tetra.VAOItem vaoi = null;
+			landItemsVao = new Tetra.IndexedVAO<Vector3> ();
+			//TESTCUBE
+			vaoi = landItemsVao.Add (Tetra.OBJMeshLoader.Load ("/mnt/data/blender/ottd3d/testcube.obj"));
+			vaoi.DiffuseTexture = new Texture("/mnt/data/blender/ottd3d/testcube-diff.jpg");
+			vaoi.modelMats = new Matrix4[nbHeol];
+			for (int i = 0; i < nbHeol; i++) {
+				Vector2 pos = new Vector2 ((float)rnd.Next(0,_gridSize), (float)rnd.Next(0,_gridSize));
+				vaoi.modelMats [i] = Matrix4.CreateTranslation (pos.X-(pos.X % 4f) + 0.5f, pos.Y-(pos.Y % 4f) + 0.5f, 0f);
 			}
-			heolienne = new vaoMesh (tmp.Positions, tmp.TexCoords, tmp.Normals, tmp.Indices, modMats);
-			heolienneTex = new Texture("/mnt/data/blender/ottd3d/heolienne.png");
+			vaoi.UpdateInstancesData ();
+			//TESTCUBE 2
+			vaoi = landItemsVao.Add (Tetra.OBJMeshLoader.Load ("/mnt/data/blender/ottd3d/testcube2.obj"));
+			vaoi.DiffuseTexture = new Texture("/mnt/data/blender/ottd3d/testcube-diff.jpg");
+			vaoi.modelMats = new Matrix4[nbHeol];
+			for (int i = 0; i < nbHeol; i++) {
+				Vector2 pos = new Vector2 ((float)rnd.Next(0,_gridSize), (float)rnd.Next(0,_gridSize));
+				vaoi.modelMats [i] = Matrix4.CreateTranslation (pos.X-(pos.X % 4f) + 0.5f, pos.Y-(pos.Y % 4f) + 0.5f, 0f);
+			}
+			vaoi.UpdateInstancesData ();
+			//HEOLIENNES
+			vaoi = landItemsVao.Add (Tetra.OBJMeshLoader.Load ("/mnt/data/blender/ottd3d/heolienne.obj"));
+			vaoi.DiffuseTexture = new Texture("/mnt/data/blender/ottd3d/heolienne.png");
+			vaoi.modelMats = new Matrix4[nbHeol];
+			for (int i = 0; i < nbHeol; i++) {
+				Vector2 pos = new Vector2 ((float)rnd.Next(0,_gridSize), (float)rnd.Next(0,_gridSize));
+				vaoi.modelMats [i] = Matrix4.CreateTranslation (pos.X-(pos.X % 4f) + 0.5f, pos.Y-(pos.Y % 4f) + 0.5f, 0f);
+			}
+			vaoi.UpdateInstancesData ();
+
+
+			landItemsVao.BuildBuffers ();
+			#endregion
 
 			initShaders ();
 
@@ -875,37 +844,8 @@ namespace Ottd3D
 
 			if (trackMesh != null)
 				trackMesh.Render (PrimitiveType.LineStrip);
-
-			//drawTestTrees ();
-
-
-//			landItemsVao.Bind();
-//			landItemsVao.Render (PrimitiveType.Triangles, landItemsVao.Meshes [0]);
-//			landItemsVao.Unbind ();
 		}
-
-		void drawTestTrees()
-		{
-			Matrix4 m = simpleTexturedShader.ModelViewMatrix;
-			m.Column0 = Vector4.UnitX;
-			//m.Column1 = Vector4.UnitY;
-			m.Column2 = Vector4.UnitY;
-			//m.Column3 = new Vector4(m.Column3.X, m.Column3.Y, 0f, m.Column3.W);
-			m.Row3 = modelview.Row3;
-			//m.Row3 = new Vector4(m.Row3.X, m.Row3.Y, m.Row3.Z, m.Row3.W);
-			//			m.ClearRotation();
-			//			m.Column1 = modelview.Column1;
-			//
-			simpleTexturedShader.ModelViewMatrix = m;
-
-			//simpleTexturedShader.ModelMatrix = Matrix4.CreateTranslation (100, 100, 0);
-			simpleTexturedShader.Enable ();
-			GL.BindTexture (TextureTarget.Texture2D, treeTex);
-			tree.Render (PrimitiveType.TriangleStrip);
-			GL.BindTexture (TextureTarget.Texture2D, 0);
-			simpleTexturedShader.ModelViewMatrix = modelview;
-			simpleTexturedShader.ModelMatrix = Matrix4.Identity;		
-		}
+			
 
 		#region Main and CTOR
 		[STAThread]
