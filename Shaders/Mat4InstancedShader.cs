@@ -17,7 +17,8 @@ namespace Tetra
 			layout (location = 0) in vec3 in_position;
 			layout (location = 1) in vec2 in_tex;
 			layout (location = 2) in vec3 in_normal;
-			layout (location = 3) in mat4 in_model;
+			layout (location = 3) in vec3 in_tangent;
+			layout (location = 4) in mat4 in_model;
 
 			layout (std140, index = 0) uniform block_data{
 				mat4 Projection;
@@ -28,7 +29,8 @@ namespace Tetra
 			};
 
 			out vec2 texCoord;			
-			out vec3 n;			
+			out vec3 n;
+			out vec3 t;
 			out vec4 vEyeSpacePos;
 			
 
@@ -36,7 +38,8 @@ namespace Tetra
 			{				
 
 				texCoord = in_tex;
-				n = normalize(vec3(Normal * in_model * vec4(in_normal, 0)));
+				n = vec3(Normal * in_model * vec4(in_normal, 0));
+				t = vec3(Normal * in_model * vec4(in_tangent, 0));
 
 				vec3 pos = in_position.xyz;
 
@@ -62,6 +65,7 @@ namespace Tetra
 
 
 			uniform sampler2D tex;
+			uniform sampler2D normal;
 
 			layout (std140, index = 0) uniform block_data{
 				mat4 Projection;
@@ -73,7 +77,8 @@ namespace Tetra
 
 			in vec2 texCoord;			
 			in vec4 vEyeSpacePos;
-			in vec3 n;						
+			in vec3 n;
+			in vec3 t;
 			
 			out vec4 out_frag_color;
 
@@ -92,20 +97,37 @@ namespace Tetra
 			   return fResult;
 			}
 
+			vec3 CalcBumpedNormal()
+			{
+			    vec3 Normal = normalize(n);
+			    vec3 Tangent = normalize(t);
+			    Tangent = normalize(Tangent - dot(Tangent, Normal) * Normal);
+			    vec3 Bitangent = cross(Tangent, Normal);
+			    vec3 BumpMapNormal = texture(normal, texCoord).xyz;
+			    BumpMapNormal = 2.0 * BumpMapNormal - vec3(1.0, 1.0, 1.0);
+			    vec3 NewNormal;
+			    mat3 TBN = mat3(Tangent, Bitangent, Normal);
+			    NewNormal = TBN * BumpMapNormal;
+			    NewNormal = normalize(NewNormal);
+			    return NewNormal;
+			}
 
 			void main(void)
 			{
+				//vec3 nmap = normalize(texture2D( normal, texCoord ).rgb*2.0 - 1.0);
+				vec3 N = CalcBumpedNormal();
+
 				vec3 l;
 				if (lightPos.w == 0.0)
 					l = normalize(-lightPos.xyz);
 				else
-					l = normalize(lightPos.xyz - vEyeSpacePos.xyz);
+					l = normalize(lightPos.xyz - vEyeSpacePos.xyz);				
 
-				float Idiff = clamp(max(dot(n,l), 0.0),0.5,1.0);
+				float Idiff = clamp(max(dot(N,l), 0.0),0.5,1.0);
    				  
 				vec4 diffTex = texture( tex, texCoord) * Color;
 
-			   float fFogCoord = abs(vEyeSpacePos.z/vEyeSpacePos.w);
+			   	float fFogCoord = abs(vEyeSpacePos.z/vEyeSpacePos.w);
 
 				out_frag_color = vec4( 
 					mix(diffTex.rgb * Idiff , fogColor.rgb, getFogFactor(fFogCoord)),diffTex.a);
@@ -117,14 +139,20 @@ namespace Tetra
 			Compile ();
 		}
 
-		public int DiffuseTexture;
+		public int DiffuseTexture, NormalTexture;
 
+		protected override void BindSamplesSlots ()
+		{
+			base.BindSamplesSlots ();
+			GL.Uniform1(GL.GetUniformLocation (pgmId, "normal"), 1);
+		}
 		protected override void BindVertexAttributes ()
 		{
 			base.BindVertexAttributes ();
 
 			GL.BindAttribLocation(pgmId, 2, "in_normal");
-			GL.BindAttribLocation(pgmId, 3, "in_model");
+			GL.BindAttribLocation(pgmId, 3, "in_tangent");
+			GL.BindAttribLocation(pgmId, IndexedVAO.instanceBufferIndex, "in_model");
 		}
 		protected override void GetUniformLocations ()
 		{	
@@ -134,7 +162,8 @@ namespace Tetra
 		public override void Enable ()
 		{
 			GL.UseProgram (pgmId);
-
+			GL.ActiveTexture (TextureUnit.Texture1);
+			GL.BindTexture(TextureTarget.Texture2D, NormalTexture);
 			GL.ActiveTexture (TextureUnit.Texture0);
 			GL.BindTexture(TextureTarget.Texture2D, DiffuseTexture);
 		}

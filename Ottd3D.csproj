@@ -52,7 +52,6 @@
     <Compile Include="Shaders\BrushShader.cs" />
     <Compile Include="Ottd3DMapEditor.cs" />
     <Compile Include="Ottd3DWindow.cs" />
-    <Compile Include="SkyBox.cs" />
     <Compile Include="Shaders\SingleLightShader.cs" />
     <Compile Include="Shaders\Mat4InstancedShader.cs" />
     <Compile Include="Shaders\VertexDispShader.cs" />
@@ -63,6 +62,7 @@
     <Folder Include="Shaders\" />
     <Folder Include="Meshes\" />
     <Folder Include="images\trees\" />
+    <Folder Include="images\skybox\" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Shaders\Grid.frag" />
@@ -95,6 +95,12 @@
     <EmbeddedResource Include="images\trees\tree1.png" />
     <EmbeddedResource Include="images\trees\obj__pinet1.obj" />
     <EmbeddedResource Include="images\trees\pinet1.png" />
+    <EmbeddedResource Include="images\skybox\back.bmp" />
+    <EmbeddedResource Include="images\skybox\bottom.bmp" />
+    <EmbeddedResource Include="images\skybox\front.bmp" />
+    <EmbeddedResource Include="images\skybox\left.bmp" />
+    <EmbeddedResource Include="images\skybox\right.bmp" />
+    <EmbeddedResource Include="images\skybox\top.bmp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="lib\GGL\GGL.csproj">

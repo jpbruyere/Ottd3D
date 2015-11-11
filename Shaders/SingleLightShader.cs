@@ -4,7 +4,7 @@ using System.Diagnostics;
 using OpenTK;
 using GameLib;
 
-namespace Ottd3D
+namespace Ottd3D2
 {
 	public class SingleLightShader : Shader
 	{
