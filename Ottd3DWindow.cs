@@ -164,7 +164,7 @@ namespace Ottd3D
 		public static CircleShader circleShader;
 		public static Ottd3D.VertexDispShader gridShader;
 		public static GameLib.Shader simpleTexturedShader;
-		public static go.GLBackend.TexturedShader CacheRenderingShader;
+		public static Tetra.Shader CacheRenderingShader;
 
 		public static Tetra.Mat4InstancedShader objShader;
 
@@ -177,7 +177,7 @@ namespace Ottd3D
 			gridShader = new Ottd3D.VertexDispShader ("Ottd3D.Shaders.VertDisp.vert", "Ottd3D.Shaders.Grid.frag");
 
 			simpleTexturedShader = new GameLib.Shader ();
-			CacheRenderingShader = new go.GLBackend.TexturedShader();			
+			CacheRenderingShader = new Tetra.Shader();			
 
 			circleShader.Update ();
 
@@ -395,7 +395,6 @@ namespace Ottd3D
 			heightMapIsUpToDate = true,
 			splatTextureIsUpToDate = true;
 		QuadVAO cacheQuad;
-		Matrix4 cacheProjection;
 		int gridCacheTex, gridSelectionTex;
 		int fboGrid, depthRenderbuffer;
 		DrawBuffersEnum[] dbe = new DrawBuffersEnum[]
@@ -411,7 +410,7 @@ namespace Ottd3D
 			if (cacheQuad != null)
 				cacheQuad.Dispose ();
 			cacheQuad = new QuadVAO (0, 0, ClientRectangle.Width, ClientRectangle.Height, 0, 1, 1, -1);
-			cacheProjection = Matrix4.CreateOrthographicOffCenter 
+			CacheRenderingShader.MVP = Matrix4.CreateOrthographicOffCenter 
 				(0, ClientRectangle.Width, 0, ClientRectangle.Height, 0, 1);
 			initGridFbo ();
 		}
@@ -421,9 +420,6 @@ namespace Ottd3D
 			GL.Disable (EnableCap.DepthTest);
 
 			CacheRenderingShader.Enable ();
-			CacheRenderingShader.ProjectionMatrix = cacheProjection;
-			CacheRenderingShader.ModelViewMatrix = Matrix4.Identity;
-			CacheRenderingShader.Color = new Vector4(1f,1f,1f,1f);
 
 			GL.ActiveTexture (TextureUnit.Texture0);
 			GL.BindTexture (TextureTarget.Texture2D, gridCacheTex);
