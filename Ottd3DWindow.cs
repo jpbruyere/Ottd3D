@@ -302,15 +302,15 @@ namespace Ottd3D
 		public void initGrid()
 		{
 			const float z = 0.0f;
-			const int IdxPrimitiveRestart = int.MaxValue;
+			const ushort IdxPrimitiveRestart = ushort.MaxValue;
 
 			Vector3[] positionVboData;
-			int[] indicesVboData;
+			ushort[] indicesVboData;
 			Vector2[] texVboData;
 
 			positionVboData = new Vector3[_gridSize * _gridSize];
 			texVboData = new Vector2[_gridSize * _gridSize];
-			indicesVboData = new int[(_gridSize * 2 + 1) * _gridSize];
+			indicesVboData = new ushort[(_gridSize * 2 + 1) * _gridSize];
 
 			for (int y = 0; y < _gridSize; y++) {
 				for (int x = 0; x < _gridSize; x++) {				
@@ -318,8 +318,8 @@ namespace Ottd3D
 					texVboData [_gridSize * y + x] = new Vector2 ((float)x*0.5f, (float)y*0.5f);
 
 					if (y < _gridSize-1) {
-						indicesVboData [(_gridSize * 2 + 1) * y + x*2] = _gridSize * y + x;
-						indicesVboData [(_gridSize * 2 + 1) * y + x*2 + 1] = _gridSize * (y+1) + x;
+						indicesVboData [(_gridSize * 2 + 1) * y + x*2] =(ushort)(_gridSize * y + x);
+						indicesVboData [(_gridSize * 2 + 1) * y + x*2 + 1] = (ushort)(_gridSize * (y+1) + x);
 					}
 
 					if (x == _gridSize-1) {
@@ -636,7 +636,7 @@ namespace Ottd3D
 		}
 		#endregion
 
-		const int instances = 300;
+		const int instances = 3000;
 
 		volatile bool updateMatrices = false;
 
@@ -678,7 +678,7 @@ namespace Ottd3D
 			}
 
 
-			pinetree = new vaoMesh (tmp.Positions, tmp.TexCoords, tmp.Normals,Array.ConvertAll(tmp.Indices, i=>(int)i),modMats);
+			pinetree = new vaoMesh (tmp.Positions, tmp.TexCoords, tmp.Normals,tmp.Indices,modMats);
 			pinetreeTex = Tetra.Texture.Load("#Ottd3D.images.trees.pinet1.png");
 
 
@@ -687,7 +687,7 @@ namespace Ottd3D
 			int tcDiffTex = new Texture("/mnt/data/blender/ottd3d/testcube-diff.jpg");
 			int tcNormTex = new Texture("/mnt/data/blender/ottd3d/testcube-norm.jpg");
 
-			int houseDiffTex = new Texture("/mnt/data/Images/texture/structures/house-diff.png");
+			int houseDiffTex = new Texture("//mnt/data/blender/ottd3d/bakedtex.png");
 			int houseNormTex = new Texture("/mnt/data/Images/texture/structures/house-norm.png");
 
 			const int nbHeol = 10, heolSpacing = 4;
