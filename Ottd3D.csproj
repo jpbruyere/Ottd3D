@@ -126,7 +126,6 @@
       <Link>Meshes\heolienne.obj</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="Ottd3DWindow_newtextures.cs" />
     <None Include="images\trees\obj__pinet1.mtl" />
     <None Include="images\trees\pinet1.tga" />
     <None Include="..\..\..\data\obj\heolienne14.mtl">
