@@ -181,14 +181,18 @@ namespace Ottd3D
 
 			circleShader.Update ();
 
-			gridShader.DisplacementMap = new Texture ("heightmap.png",false);
 			gridShader.MapSize = new Vector2 (_gridSize, _gridSize);
 			gridShader.HeightScale = heightScale;
 
-			gridShader.SplatTexture = new Texture ("splat.png",false);
-
-			Texture.SetTexFilterNeareast (gridShader.DisplacementMap);
-			Texture.SetTexFilterNeareast (gridShader.SplatTexture);
+			Tetra.Texture.DefaultMagFilter = TextureMagFilter.Nearest;
+			Tetra.Texture.DefaultMinFilter = TextureMinFilter.Nearest;
+			Tetra.Texture.GenerateMipMaps = false;
+			Tetra.Texture.FlipY = false;
+			{
+				gridShader.DisplacementMap = Tetra.Texture.Load ("heightmap.png");
+				gridShader.SplatTexture = Tetra.Texture.Load ("splat.png");
+			}
+			Tetra.Texture.ResetToDefaultLoadingParams ();
 
 			objShader = new Tetra.Mat4InstancedShader ();
 			//objShader.DiffuseTexture = heolienneTex;
@@ -333,7 +337,7 @@ namespace Ottd3D
 
 			Tetra.Texture.DefaultWrapMode = TextureWrapMode.Repeat;
 			gridShader.DiffuseTexture = Tetra.Texture.Load (TextureTarget.Texture2DArray, groundTextures);
-			Tetra.Texture.DefaultWrapMode = TextureWrapMode.Clamp;
+			Tetra.Texture.ResetToDefaultLoadingParams ();
 		}
 		void drawGrid()
 		{
@@ -435,11 +439,14 @@ namespace Ottd3D
 		{
 			System.Drawing.Size cz = ClientRectangle.Size;
 
-			gridCacheTex = new Texture (cz.Width, cz.Height);
-			gridSelectionTex = new Texture (cz.Width, cz.Height);
-
-			Texture.SetTexFilterNeareast (gridSelectionTex);
-
+			Tetra.Texture.DefaultMagFilter = TextureMagFilter.Nearest;
+			Tetra.Texture.DefaultMinFilter = TextureMinFilter.Nearest;
+			Tetra.Texture.GenerateMipMaps = false;
+			{
+				gridCacheTex = new Tetra.Texture (cz.Width, cz.Height);
+				gridSelectionTex = new Tetra.Texture (cz.Width, cz.Height);
+			}
+			Tetra.Texture.ResetToDefaultLoadingParams ();
 
 			// Create Depth Renderbuffer
 			GL.GenRenderbuffers( 1, out depthRenderbuffer );
