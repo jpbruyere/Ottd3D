@@ -55,6 +55,8 @@
     <Compile Include="Shaders\SingleLightShader.cs" />
     <Compile Include="Shaders\Mat4InstancedShader.cs" />
     <Compile Include="Shaders\VertexDispShader.cs" />
+    <Compile Include="Track.cs" />
+    <Compile Include="TrackSegment.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="ui\" />

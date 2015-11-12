@@ -25,6 +25,7 @@ namespace Ottd3D
 		public enum GameState
 		{
 			Playing,
+			RailTrackEdition,
 		}
 
 		[StructLayout(LayoutKind.Sequential)]
@@ -64,7 +65,9 @@ namespace Ottd3D
 		const int _circleTexSize = 1024;
 		const float heightScale = 50.0f;
 
-		public GameState CurrentState = GameState.Playing;
+		public GameState CurrentState = GameState.RailTrackEdition;
+		public Track RailTrack = new Track();
+		Vector3 vEndTrack;
 
 		#region IValueChange implementation
 		public event EventHandler<ValueChangeEventArgs> ValueChanged;
@@ -142,7 +145,16 @@ namespace Ottd3D
 		int uboShaderSharedData, uboFogData;
 		#endregion
 
+		/// <summary> pointer in height map texture </summary>
+		int ptrHM = 0;
+		/// <summary> selected position in world coordinate </summary>
 		Vector3 selPos = Vector3.Zero;
+		Point<int> selCase;
+
+		/// <summary> Current case center in world coordinate </summary>
+		Vector3 SelCenterPos { 
+			get { return new Vector3 ((float)Math.Floor (selPos.X) + 0.5f, (float)Math.Floor (selPos.Y) + 0.5f, selPos.Z); }
+		}
 		public Vector3 SelectionPos
 		{
 			get { return selPos; }
@@ -152,6 +164,13 @@ namespace Ottd3D
 				updateSelMesh ();
 				NotifyValueChange ("SelectionPos", selPos);
 			}
+		}
+		public int PtrHM{ get { return ptrHM; } }
+		void updatePtrHm()
+		{
+			selCase = new Point<int> ((int)Math.Round (SelectionPos.X), (int)Math.Round (SelectionPos.Y));
+			ptrHM = (selCase.X + selCase.Y * _hmSize) * 4 ;
+			NotifyValueChange ("PtrHM", ptrHM);
 		}
 		public Vector2 MousePos {
 			get { return new Vector2 (Mouse.X, Mouse.Y); }
@@ -266,42 +285,6 @@ namespace Ottd3D
 		int pinetreeTex;
 
 		Tetra.SkyBox skybox;
-
-		List<Vector3> track = new List<Vector3>();
-		Point<int> selCase;
-		vaoMesh trackMesh;
-
-		void updateTrackMesh(){
-			if (trackMesh != null)
-				trackMesh.Dispose ();
-
-			List<Vector3> tp = new List<Vector3> ();
-
-			Vector3[] p = new Vector3[4];
-			const int resolution = 10;
-
-			for (int i = 0; i < track.Count-1; i++) {
-				p [0] = track [i];
-				p [3] = track [i+1];
-
-				if (p [0].X != p [3].X) {
-					if (p [0].Y != p [3].Y) {
-						p [1].X = p [0].X;
-						p [1].Y = p [3].Y;
-						p [1].Z = (p [0].Z + p [3].Z) / 2f;
-						p [2].X = p [0].X;
-						p [2].Y = p [3].Y;
-						p [2].Z = (p [0].Z + p [3].Z) / 2f;
-						for (int j = 0; j < resolution-1; j++) {
-							float t = (float)j / (float)(resolution-1);
-							tp.Add(Path.CalculateBezierPoint (t, p [0], p [1], p [2], p [3]));
-						}
-					}
-				}
-			}
-
-			trackMesh = new vaoMesh (tp.ToArray (), null, null);
-		}
 
 		public void initGrid()
 		{
@@ -540,27 +523,20 @@ namespace Ottd3D
 			gridCacheIsUpToDate = false;
 		}			
 			
-		int ptrHM = 0;
-
-		public int PtrHM{ get { return ptrHM; } }
-
-		void updatePtrHm()
-		{
-			selCase = new Point<int> ((int)Math.Round (SelectionPos.X), (int)Math.Round (SelectionPos.Y));
-			ptrHM = (selCase.X + selCase.Y * _hmSize) * 4 ;
-			NotifyValueChange ("PtrHM", ptrHM);
-		}
 
 		#region Interface
 		void initInterface()
 		{
 			this.MouseButtonUp += Mouse_ButtonUp;
+			this.MouseButtonDown += Mouse_ButtonDown;
 			this.MouseWheelChanged += new EventHandler<MouseWheelEventArgs>(Mouse_WheelChanged);
 			this.MouseMove += new EventHandler<MouseMoveEventArgs>(Mouse_Move);
+			this.KeyDown += Ottd3DWindow_KeyDown;
 
 			LoadInterface("#Ottd3D.ui.fps.goml").DataSource = this;
 			//LoadInterface("#Ottd3D.ui.menu.goml").DataSource = this;
 		}
+			
 
 		#region Mouse
 		void Mouse_Move(object sender, MouseMoveEventArgs e)
@@ -568,16 +544,39 @@ namespace Ottd3D
 			if (e.XDelta != 0 || e.YDelta != 0)
 			{
 				NotifyValueChange("MousePos", MousePos);
+				//selection texture has clientRect size and 4 bytes per pixel, so
 				int selPtr = (e.X * 4 + (ClientRectangle.Height - e.Y) * ClientRectangle.Width * 4);
-				//				SelectionPos = new Vector3 (selectionMap [selPtr], 
-				//					selectionMap [selPtr + 1], selectionMap [selPtr + 2]);
 				if (selPtr + 3 < selectionMap.Length) {
+					//selection texture has on each pixel WorldPosition on ground level coded as 2 half floats
 					SelectionPos = new Vector3 (
 						(float)selectionMap [selPtr] + (float)selectionMap [selPtr + 1] / 255f, 
 						(float)selectionMap [selPtr + 2] + (float)selectionMap [selPtr + 3] / 255f, 0f);
 				}
 				updatePtrHm ();
 
+				switch (CurrentState) {
+				case GameState.Playing:
+					break;
+				case GameState.RailTrackEdition:
+					TrackSegment ts = RailTrack.CurrentSegment;
+					if (ts != null) {
+						Debug.WriteLine ("mouse move");
+						if (SelCenterPos == ts.StartPos)
+							return;
+						if (e.Mouse.LeftButton == ButtonState.Pressed) {					
+							ts.EndPos = SelCenterPos;
+							ts.vStart = Vector3.Normalize (ts.EndPos - ts.StartPos);
+							vEndTrack = ts.vStart;
+						} else {
+							ts.EndPos = SelCenterPos;
+							Vector3 vDir = Vector3.Normalize (ts.EndPos - ts.StartPos);
+							float dot = Vector3.Dot (ts.vStart, vDir);
+							vEndTrack = -(ts.vStart - 2 * dot * vDir);
+						}
+						RailTrack.UpdateTrackMesh (vEndTrack);
+					}
+					break;
+				}	
 				if (e.Mouse.MiddleButton == OpenTK.Input.ButtonState.Pressed) {
 					if (Keyboard [Key.ShiftLeft]) {
 						Vector3 v = new Vector3 (
@@ -601,6 +600,33 @@ namespace Ottd3D
 			}
 
 		}			
+		void Mouse_ButtonDown(object sender, MouseButtonEventArgs e)
+		{
+			if (e.Button == MouseButton.Left) {
+				Debug.WriteLine ("mouse down");
+				switch (CurrentState) {
+				case GameState.Playing:
+					break;
+				case GameState.RailTrackEdition:					
+					if (RailTrack.CurrentSegment == null)
+						RailTrack.CurrentSegment = new TrackSegment (SelCenterPos);
+					else
+						RailTrack.CurrentSegment = 
+							new TrackSegment (RailTrack.CurrentSegment.EndPos, vEndTrack);
+
+					RailTrack.Segments.Add (RailTrack.CurrentSegment);
+					RailTrack.UpdateTrackMesh (vEndTrack);
+					break;
+				}
+			}
+		}
+
+		void Mouse_ButtonUp (object sender, MouseButtonEventArgs e)
+		{
+			if (e.Button == MouseButton.Left) {
+
+			}
+		}
 		void Mouse_WheelChanged(object sender, MouseWheelEventArgs e)
 		{
 			float speed = ZoomSpeed * eyeDist;
@@ -615,20 +641,25 @@ namespace Ottd3D
 				eyeDistTarget = zFar-100;
 			Animation.StartAnimation(new Animation<float> (this, "EyeDist", eyeDistTarget, (eyeDistTarget - eyeDist) * 0.2f));
 		}
+		#endregion
 
-		void Mouse_ButtonUp (object sender, MouseButtonEventArgs e)
+		#region Keyboard
+		void Ottd3DWindow_KeyDown (object sender, KeyboardKeyEventArgs e)
 		{
-			const int resolution = 10;
-			if (e.Button == MouseButton.Left) {
-				for (int i = 0; i < resolution; i++) {
-					
+			switch (e.Key) {
+			case Key.Escape:
+				if (CurrentState == GameState.RailTrackEdition) {
+					if (RailTrack.CurrentSegment != null) {
+						vEndTrack = RailTrack.CurrentSegment.vStart;
+						RailTrack.Segments.Remove (RailTrack.CurrentSegment);
+						RailTrack.CurrentSegment = null;
+						RailTrack.UpdateTrackMesh (vEndTrack);
+					}
 				}
-				track.Add (new Vector3 ((float)Math.Floor (selPos.X) + 0.5f, (float)Math.Floor (selPos.Y) + 0.5f, SelectionPos.Z));
-				updateTrackMesh ();
+				break;				
 			}
 		}
 		#endregion
-
 		void onGameStateChange (object sender, ValueChangeEventArgs e)
 		{
 			if (e.MemberName != "IsChecked" || (bool)e.NewValue != true)
@@ -899,9 +930,8 @@ namespace Ottd3D
 			drawGrid ();
 
 			drawHoverCase ();
-//
-//			if (trackMesh != null)
-//				trackMesh.Render (PrimitiveType.LineStrip);
+
+			RailTrack.Render ();
 		}
 			
 
