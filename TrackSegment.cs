@@ -21,6 +21,7 @@
 using System;
 using GGL;
 using OpenTK;
+using System.Collections.Generic;
 
 namespace Ottd3D
 {
@@ -30,8 +31,8 @@ namespace Ottd3D
 		public Vector3 StartPos, EndPos;
 		public Vector3 vStart = Vector3.UnitX;
 
-		TrackSegment[] PreviousSegment;
-		TrackSegment[] NextSegment;
+		public List<TrackSegment> PreviousSegment = new List<TrackSegment>();
+		public List<TrackSegment> NextSegment = new List<TrackSegment>();
 
 		public TrackSegment (Vector3 startPos) : this(startPos, Vector3.UnitX)
 		{}

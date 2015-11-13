@@ -23,6 +23,7 @@ using GGL;
 using System.Collections.Generic;
 using OpenTK;
 using OpenTK.Graphics.OpenGL;
+using System.Linq;
 
 namespace Ottd3D
 {
@@ -31,51 +32,72 @@ namespace Ottd3D
 		const int resolution = 20;
 
 		vaoMesh trackMesh;
+		Tetra.IndexedVAO trackVao;
 
-		public List<TrackSegment> Segments = new List<TrackSegment>();
+		public List<TrackSegment> TrackStarts = new List<TrackSegment>();
 		public TrackSegment CurrentSegment = null;
+		public Vector3 vEnd;
 
 		public Track ()
 		{
 		}
-			
-		public void UpdateTrackMesh(Vector3 vEnd){
+
+		List<Vector3> tp = new List<Vector3> ();
+
+		void buildSegment(TrackSegment tPrevious, TrackSegment tNext)
+		{
+			if (tPrevious != null) {
+				float segLenght = (tPrevious.EndPos - tPrevious.StartPos).Length;
+				float controlPointDist = segLenght * 0.49f;
+
+				Vector3 secondCtrPoint;
+				if (tNext == null) {
+					if (tPrevious == CurrentSegment)
+						secondCtrPoint = tPrevious.EndPos - vEnd * controlPointDist;
+					else
+						secondCtrPoint = tPrevious.EndPos - tPrevious.vStart * controlPointDist;
+				}else
+					secondCtrPoint = tPrevious.EndPos - tNext.vStart * controlPointDist;
+
+				Vector3[] p = new Vector3[] {
+					tPrevious.StartPos,
+					tPrevious.StartPos + tPrevious.vStart * controlPointDist,
+					secondCtrPoint,
+					tPrevious.EndPos
+				};
+				for (int j = 0; j < resolution - 1; j++) {
+					float t = (float)j / (float)(resolution - 1);
+					tp.Add (Path.CalculateBezierPoint (t, p [0], p [1], p [2], p [3]));
+				}
+
+				if (tNext == null) {
+					tp.Add (tPrevious.EndPos);
+					return;
+				}
+			}
+			if (tNext.NextSegment.Count == 0) {
+				buildSegment(tNext, null);
+				return;
+			}
+
+			foreach (TrackSegment ts in tNext.NextSegment ) {
+				buildSegment (tNext, ts);
+			}
+		}
+
+		public void UpdateTrackMesh(){
 			if (trackMesh != null)
 				trackMesh.Dispose ();
 			trackMesh = null;
 
-			List<Vector3> tp = new List<Vector3> ();
-
-			for (int i = 0; i < Segments.Count; i++) {
-				TrackSegment seg = Segments [i];
-				float segLenght = (seg.EndPos - seg.StartPos).Length;
-				float controlPointDist = segLenght * 0.49f;
-
-				Vector3 secondCtrPoint;
-				if (i < Segments.Count - 1)
-					secondCtrPoint = seg.EndPos - Segments [i + 1].vStart * controlPointDist;
-				else
-					secondCtrPoint = seg.EndPos - vEnd * controlPointDist;
-
-				Vector3[] p = new Vector3[]
-				{
-					seg.StartPos,
-					seg.StartPos + seg.vStart * controlPointDist,
-					secondCtrPoint,
-					seg.EndPos
-				};
-				for (int j = 0; j < resolution-1; j++) {
-					float t = (float)j / (float)(resolution-1);
-					tp.Add(Path.CalculateBezierPoint (t, p [0], p [1], p [2], p [3]));
-				}
-			}
+			foreach (TrackSegment tStart in TrackStarts)
+				buildSegment (null, tStart);
 
 			if (tp.Count == 0)
 				return;
 
-			tp.Add (Segments [Segments.Count - 1].EndPos);
-
 			trackMesh = new vaoMesh (tp.ToArray (), null, null);
+			tp.Clear ();
 		}
 
 		public void Render()
