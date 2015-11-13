@@ -27,8 +27,8 @@ Global
 		{5490AD74-0BB3-438C-9DE4-EB7CFC68BCB5}.Debug|Linux_x86.Build.0 = Debug|Any CPU
 		{5490AD74-0BB3-438C-9DE4-EB7CFC68BCB5}.Debug|Win_x86.ActiveCfg = Debug|Win_x86
 		{5490AD74-0BB3-438C-9DE4-EB7CFC68BCB5}.Debug|Win_x86.Build.0 = Debug|Win_x86
-		{5490AD74-0BB3-438C-9DE4-EB7CFC68BCB5}.Release|Linux_x86.ActiveCfg = Release|Linux_x86
-		{5490AD74-0BB3-438C-9DE4-EB7CFC68BCB5}.Release|Linux_x86.Build.0 = Release|Linux_x86
+		{5490AD74-0BB3-438C-9DE4-EB7CFC68BCB5}.Release|Linux_x86.ActiveCfg = Release|Any CPU
+		{5490AD74-0BB3-438C-9DE4-EB7CFC68BCB5}.Release|Linux_x86.Build.0 = Release|Any CPU
 		{5490AD74-0BB3-438C-9DE4-EB7CFC68BCB5}.Release|Win_x86.ActiveCfg = Release|Win_x86
 		{5490AD74-0BB3-438C-9DE4-EB7CFC68BCB5}.Release|Win_x86.Build.0 = Release|Win_x86
 		{C2980F9B-4798-4C05-99E2-E174810F7C7B}.Debug|Linux_x86.ActiveCfg = Debug|Any CPU
