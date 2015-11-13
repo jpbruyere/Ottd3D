@@ -94,7 +94,6 @@
     <EmbeddedResource Include="ui\heightEditionMenu.goml" />
     <EmbeddedResource Include="ui\SplatTexPopTemplate.goml" />
     <EmbeddedResource Include="ui\SpattingMenu.goml" />
-    <EmbeddedResource Include="images\trees\tree1.png" />
     <EmbeddedResource Include="images\trees\obj__pinet1.obj" />
     <EmbeddedResource Include="images\trees\pinet1.png" />
     <EmbeddedResource Include="images\skybox\back.bmp" />
@@ -103,6 +102,14 @@
     <EmbeddedResource Include="images\skybox\left.bmp" />
     <EmbeddedResource Include="images\skybox\right.bmp" />
     <EmbeddedResource Include="images\skybox\top.bmp" />
+    <EmbeddedResource Include="images\trees\obj__pinet2.obj" />
+    <EmbeddedResource Include="images\trees\pinet2.png" />
+    <EmbeddedResource Include="images\trees\tree1.png" />
+    <EmbeddedResource Include="images\trees\obj__tree1.obj" />
+    <EmbeddedResource Include="images\trees\obj__tree2.obj" />
+    <EmbeddedResource Include="images\trees\tree2.png" />
+    <EmbeddedResource Include="images\trees\obj__tree3.obj" />
+    <EmbeddedResource Include="images\trees\tree3.png" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="lib\GGL\GGL.csproj">
@@ -141,5 +148,7 @@
     <None Include="Meshes\cubetest.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Include="images\trees\3ds__tree1.3ds" />
+    <None Include="images\trees\3ds__tree2.3ds" />
   </ItemGroup>
 </Project>
