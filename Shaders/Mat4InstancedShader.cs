@@ -115,6 +115,10 @@ namespace Tetra
 			void main(void)
 			{
 				//vec3 nmap = normalize(texture2D( normal, texCoord ).rgb*2.0 - 1.0);
+				vec4 diffTex = texture( tex, texCoord) * Color;
+				if (diffTex.a < 0.5)
+					discard;
+
 				vec3 N = CalcBumpedNormal();
 
 				vec3 l;
@@ -124,8 +128,6 @@ namespace Tetra
 					l = normalize(lightPos.xyz - vEyeSpacePos.xyz);				
 
 				float Idiff = clamp(max(dot(N,l), 0.0),0.5,1.0);
-   				  
-				vec4 diffTex = texture( tex, texCoord) * Color;
 
 			   	float fFogCoord = abs(vEyeSpacePos.z/vEyeSpacePos.w);
 
