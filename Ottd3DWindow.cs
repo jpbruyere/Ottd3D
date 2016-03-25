@@ -10,7 +10,7 @@ using OpenTK.Input;
 using System.Diagnostics;
 
 //using GGL;
-using go;
+using Crow;
 using System.Threading;
 using GGL;
 using System.Collections.Generic;
@@ -76,42 +76,6 @@ namespace Ottd3D
 		}
 		#endregion
 
-		#region FPS
-		int _fps = 0;
-
-		public int fps {
-			get { return _fps; }
-			set {
-				if (_fps == value)
-					return;
-
-				_fps = value;
-
-				if (_fps > fpsMax) {
-					fpsMax = _fps;
-					NotifyValueChange ("fpsMax", fpsMax);
-				} else if (_fps < fpsMin) {
-					fpsMin = _fps;
-					NotifyValueChange ("fpsMin", fpsMin);
-				}
-					
-				NotifyValueChange ("fps", _fps);
-				NotifyValueChange ("update",
-					this.updateTime.ElapsedMilliseconds.ToString () + " ms");
-			}
-		}
-
-		public int fpsMin = int.MaxValue;
-		public int fpsMax = 0;
-		public string update = "";
-
-		void resetFps ()
-		{
-			fpsMin = int.MaxValue;
-			fpsMax = 0;
-			_fps = 0;
-		}
-		#endregion
 
 		#region  scene matrix and vectors
 		public static Matrix4 modelview;
@@ -134,7 +98,7 @@ namespace Ottd3D
 		float eyeDist = 100;
 		float eyeDistTarget = 100f;
 		float MoveSpeed = 0.004f;
-		float ZoomSpeed = 0.1f;
+		float ZoomSpeed = 10.0f;
 		float RotationSpeed = 0.005f;
 
 		public Vector4 vLight = new Vector4 (0.5f, 0.5f, -1, 0);
@@ -189,7 +153,7 @@ namespace Ottd3D
 		void initShaders()
 		{
 			circleShader = new CircleShader ("GGL.Shaders.GameLib.red",_circleTexSize, _circleTexSize);
-			circleShader.Color = Color.White;
+			circleShader.Color = new Vector4 (1, 1, 1, 1);
 			circleShader.Radius = 0.01f;
 
 			gridShader = new Ottd3D.VertexDispShader ("Ottd3D.Shaders.VertDisp.vert", "Ottd3D.Shaders.Grid.frag");
@@ -215,7 +179,7 @@ namespace Ottd3D
 			objShader = new Tetra.Mat4InstancedShader ();
 			//objShader.DiffuseTexture = heolienneTex;
 
-			shaderSharedData.Color = Color.White;
+			shaderSharedData.Color = new Vector4 (1, 1, 1, 1);
 			uboShaderSharedData = GL.GenBuffer ();
 			GL.BindBuffer (BufferTarget.UniformBuffer, uboShaderSharedData);
 			GL.BufferData(BufferTarget.UniformBuffer,Marshal.SizeOf(shaderSharedData),
@@ -279,7 +243,7 @@ namespace Ottd3D
 		vaoMesh gridMesh;
 		vaoMesh selMesh;
 
-		Tetra.IndexedVAO landItemsVao, transparentItemsVao;
+		Tetra.IndexedVAO<Tetra.VAOInstancedData> landItemsVao, transparentItemsVao;
 
 		Tetra.SkyBox skybox;
 
@@ -479,14 +443,14 @@ namespace Ottd3D
 			landItemsVao.Unbind ();
 
 			//GL.DepthMask (false);
+			GL.Enable (EnableCap.AlphaTest);
+			GL.Enable (EnableCap.Blend);
+			GL.BlendFunc(BlendingFactorSrc.SrcAlpha, BlendingFactorDest.OneMinusSrcAlpha);
 
 			transparentItemsVao.Bind ();
 			transparentItemsVao.Render (PrimitiveType.Triangles);
 			transparentItemsVao.Unbind ();
 
-			GL.Enable (EnableCap.AlphaTest);
-			GL.Enable (EnableCap.Blend);
-			GL.BlendFunc(BlendingFactorSrc.SrcAlpha, BlendingFactorDest.OneMinusSrcAlpha);
 
 			//GL.DepthMask (true);
 
@@ -529,18 +493,42 @@ namespace Ottd3D
 		{
 			this.MouseButtonUp += Mouse_ButtonUp;
 			this.MouseButtonDown += Mouse_ButtonDown;
-			this.MouseWheelChanged += new EventHandler<MouseWheelEventArgs>(Mouse_WheelChanged);
-			this.MouseMove += new EventHandler<MouseMoveEventArgs>(Mouse_Move);
+			this.MouseWheelChanged += Mouse_WheelChanged;
+			this.MouseMove += Mouse_Move;
 			this.KeyDown += Ottd3DWindow_KeyDown;
 
-			LoadInterface("#Ottd3D.ui.fps.goml").DataSource = this;
+			CrowInterface.LoadInterface("#Ottd3D.ui.fps.goml").DataSource = this;
 			//LoadInterface("#Ottd3D.ui.menu.goml").DataSource = this;
 		}
 			
-
 		#region Mouse
-		void Mouse_Move(object sender, MouseMoveEventArgs e)
-		{			
+		void Mouse_ButtonDown (object sender, OpenTK.Input.MouseButtonEventArgs e)
+		{
+			if (e.Button == OpenTK.Input.MouseButton.Left) {				
+				switch (CurrentState) {
+				case GameState.Playing:
+					break;
+				case GameState.RailTrackEdition:					
+					if (RailTrack.CurrentSegment == null) {
+						RailTrack.CurrentSegment = new TrackSegment (SelCenterPos);
+						RailTrack.TrackStarts.Add (RailTrack.CurrentSegment);
+					} else {
+						TrackSegment newTS = new TrackSegment (RailTrack.CurrentSegment.EndPos, RailTrack.vEnd);
+						RailTrack.CurrentSegment.NextSegment.Add (newTS);
+						newTS.PreviousSegment.Add (RailTrack.CurrentSegment);
+						RailTrack.CurrentSegment = newTS;
+					}
+
+					RailTrack.UpdateTrackMesh ();
+					break;
+				}
+			}
+		}
+		void Mouse_ButtonUp (object sender, OpenTK.Input.MouseButtonEventArgs e)
+		{
+		}
+		void Mouse_Move(object sender, OpenTK.Input.MouseMoveEventArgs e)
+		{
 			if (e.XDelta != 0 || e.YDelta != 0)
 			{
 				NotifyValueChange("MousePos", MousePos);
@@ -562,7 +550,7 @@ namespace Ottd3D
 					if (ts != null) {						
 						if (SelCenterPos == ts.StartPos)
 							return;
-						if (e.Mouse.LeftButton == ButtonState.Pressed) {					
+						if (e.Mouse.LeftButton == OpenTK.Input.ButtonState.Pressed) {					
 							ts.EndPos = SelCenterPos;
 							ts.vStart = Vector3.Normalize (ts.EndPos - ts.StartPos);
 							RailTrack.vEnd = ts.vStart;
@@ -577,7 +565,7 @@ namespace Ottd3D
 					break;
 				}	
 				if (e.Mouse.MiddleButton == OpenTK.Input.ButtonState.Pressed) {
-					if (Keyboard [Key.ShiftLeft]) {
+					if (Keyboard [OpenTK.Input.Key.ShiftLeft]) {
 						Vector3 v = new Vector3 (
 							Vector2.Normalize (vLook.Xy.PerpendicularLeft));
 						Vector3 tmp = Vector3.Transform (vLook, 
@@ -595,60 +583,33 @@ namespace Ottd3D
 					UpdateViewMatrix ();
 					return;
 				}
-
-			}
-
-		}			
-		void Mouse_ButtonDown(object sender, MouseButtonEventArgs e)
-		{
-			if (e.Button == MouseButton.Left) {				
-				switch (CurrentState) {
-				case GameState.Playing:
-					break;
-				case GameState.RailTrackEdition:					
-					if (RailTrack.CurrentSegment == null) {
-						RailTrack.CurrentSegment = new TrackSegment (SelCenterPos);
-						RailTrack.TrackStarts.Add (RailTrack.CurrentSegment);
-					} else {
-						TrackSegment newTS = new TrackSegment (RailTrack.CurrentSegment.EndPos, RailTrack.vEnd);
-						RailTrack.CurrentSegment.NextSegment.Add (newTS);
-						newTS.PreviousSegment.Add (RailTrack.CurrentSegment);
-						RailTrack.CurrentSegment = newTS;
-					}
-
-					RailTrack.UpdateTrackMesh ();
-					break;
-				}
 			}
 		}
-
-		void Mouse_ButtonUp (object sender, MouseButtonEventArgs e)
+			
+		void Mouse_WheelChanged(object sender, OpenTK.Input.MouseWheelEventArgs e)
 		{
-			if (e.Button == MouseButton.Left) {
-
-			}
-		}
-		void Mouse_WheelChanged(object sender, MouseWheelEventArgs e)
-		{
-			float speed = ZoomSpeed * eyeDist;
-
-			if (Keyboard[Key.ControlLeft])
+			float speed = ZoomSpeed;
+			if (Keyboard[OpenTK.Input.Key.ShiftLeft])
+				speed *= 0.1f;
+			else if (Keyboard[OpenTK.Input.Key.ControlLeft])
 				speed *= 20.0f;
 
 			eyeDistTarget -= e.Delta * speed;
-			if (eyeDistTarget < zNear+5)
-				eyeDistTarget = zNear+5;
-			else if (eyeDistTarget > zFar-100)
-				eyeDistTarget = zFar-100;
-			Animation.StartAnimation(new Animation<float> (this, "EyeDist", eyeDistTarget, (eyeDistTarget - eyeDist) * 0.2f));
+			if (eyeDistTarget < zNear+1)
+				eyeDistTarget = zNear+1;
+			else if (eyeDistTarget > zFar-6)
+				eyeDistTarget = zFar-6;
+
+			//EyeDist = eyeDistTarget;
+			Animation.StartAnimation(new Animation<float> (this, "EyeDist", eyeDistTarget, (eyeDistTarget - eyeDist) * 0.1f));
 		}
 		#endregion
 
 		#region Keyboard
-		void Ottd3DWindow_KeyDown (object sender, KeyboardKeyEventArgs e)
+		void Ottd3DWindow_KeyDown (object sender, OpenTK.Input.KeyboardKeyEventArgs e)
 		{
 			switch (e.Key) {
-			case Key.Escape:
+			case OpenTK.Input.Key.Escape:
 				if (CurrentState == GameState.RailTrackEdition) {
 					if (RailTrack.CurrentSegment != null) {
 						RailTrack.vEnd = RailTrack.CurrentSegment.vStart;
@@ -705,37 +666,37 @@ namespace Ottd3D
 			int houseNormTex = new Texture("/mnt/data/Images/texture/structures/house-norm.png");
 
 			const int nbHeol = 5, heolSpacing = 4;
-			Tetra.VAOItem vaoi = null;
-			landItemsVao = new Tetra.IndexedVAO ();
+			Tetra.VAOItem<Tetra.VAOInstancedData> vaoi = null;
+			landItemsVao = new Tetra.IndexedVAO<Tetra.VAOInstancedData> ();
 				
 			//TEST HOUSE
 			vaoi = landItemsVao.Add (Tetra.OBJMeshLoader.Load ("/mnt/data/blender/ottd3d/house0.obj"));
 			vaoi.DiffuseTexture = houseDiffTex;
 			vaoi.NormalMapTexture = houseNormTex;
-			vaoi.modelMats = new Matrix4[nbHeol];
+			vaoi.Datas = new Tetra.VAOInstancedData[nbHeol];
 			for (int i = 0; i < nbHeol; i++) {
 				Vector2 pos = new Vector2 ((float)rnd.Next(0,_gridSize), (float)rnd.Next(0,_gridSize));
-				vaoi.modelMats [i] = Matrix4.CreateTranslation (pos.X-(pos.X % 4f) + 0.5f, pos.Y-(pos.Y % 4f) + 0.5f, 0f);
+				vaoi.Datas[i].modelMats = Matrix4.CreateTranslation (pos.X-(pos.X % 4f) + 0.5f, pos.Y-(pos.Y % 4f) + 0.5f, 0f);
 			}
 			vaoi.UpdateInstancesData ();
 
 			//HEOLIENNES
 			vaoi = landItemsVao.Add (Tetra.OBJMeshLoader.Load ("/mnt/data/blender/ottd3d/heolienne.obj"));
 			vaoi.DiffuseTexture = new Texture("/mnt/data/blender/ottd3d/heolienne.png");
-			vaoi.modelMats = new Matrix4[nbHeol];
+			vaoi.Datas = new Tetra.VAOInstancedData[nbHeol];
 			for (int i = 0; i < nbHeol; i++) {
 				Vector2 pos = new Vector2 ((float)rnd.Next(0,_gridSize), (float)rnd.Next(0,_gridSize));
-				vaoi.modelMats [i] = Matrix4.CreateTranslation (pos.X-(pos.X % 4f) + 0.5f, pos.Y-(pos.Y % 4f) + 0.5f, 0f);
+				vaoi.Datas[i].modelMats = Matrix4.CreateTranslation (pos.X-(pos.X % 4f) + 0.5f, pos.Y-(pos.Y % 4f) + 0.5f, 0f);
 			}
-			vaoi.UpdateInstancesData ();
+			vaoi.UpdateInstancesData();
 
 			landItemsVao.ComputeTangents();
 			landItemsVao.BuildBuffers ();
 			#endregion
 
 			const float treezone = 256;
-			const int treeCount = 500;
-			transparentItemsVao = new Tetra.IndexedVAO ();
+			const int treeCount = 50;
+			transparentItemsVao = new Tetra.IndexedVAO<Tetra.VAOInstancedData> ();
 
 			//====TREE1====
 //			vaoi = transparentItemsVao.Add (Tetra.OBJMeshLoader.Load ("#Ottd3D.images.trees.obj__pinet1.obj"));
@@ -751,19 +712,19 @@ namespace Ottd3D
 			//====TREE2====
 			addRandomTrees (transparentItemsVao, treeCount,
 				"#Ottd3D.images.trees.obj__pinet1.obj",
-				"#Ottd3D.images.trees.pinet1.png");
+				"#Ottd3D.images.trees.pinet1.png",5f);
 			addRandomTrees (transparentItemsVao, treeCount,
 				"#Ottd3D.images.trees.obj__pinet2.obj",
-				"#Ottd3D.images.trees.pinet2.png");
+				"#Ottd3D.images.trees.pinet2.png",5f);
 			addRandomTrees (transparentItemsVao, treeCount,
 				"#Ottd3D.images.trees.obj__tree1.obj",
-				"#Ottd3D.images.trees.tree1.png",2f);
+				"#Ottd3D.images.trees.tree1.png",5f);
 			addRandomTrees (transparentItemsVao, treeCount,
 				"#Ottd3D.images.trees.obj__tree2.obj",
-				"#Ottd3D.images.trees.tree2.png", 2f);
+				"#Ottd3D.images.trees.tree2.png", 5f);
 			addRandomTrees (transparentItemsVao, treeCount,
 				"#Ottd3D.images.trees.obj__tree3.obj",
-				"#Ottd3D.images.trees.tree3.png", 2f);
+				"#Ottd3D.images.trees.tree3.png", 5f);
 
 			transparentItemsVao.ComputeTangents ();
 			transparentItemsVao.BuildBuffers ();
@@ -830,15 +791,15 @@ namespace Ottd3D
 			skybox = new Tetra.SkyBox (sky[0],sky[1],sky[2],sky[3],sky[4],sky[5]);
 		}
 			
-		void addRandomTrees(Tetra.IndexedVAO vao, int count, string objPath, string diffTexPath, float _scale=1f)
+		void addRandomTrees(Tetra.IndexedVAO<Tetra.VAOInstancedData> vao, int count, string objPath, string diffTexPath, float _scale=1f)
 		{			
-			Tetra.VAOItem vaoi = vao.Add (Tetra.OBJMeshLoader.Load (objPath));
+			Tetra.VAOItem<Tetra.VAOInstancedData> vaoi = vao.Add (Tetra.OBJMeshLoader.Load (objPath));
 			vaoi.DiffuseTexture = Tetra.Texture.Load(diffTexPath);
-			vaoi.modelMats = new Matrix4[count];
+			vaoi.Datas = new Tetra.VAOInstancedData[count];
 			for (int i = 0; i < count; i++) {				
 				Vector2 pos = new Vector2 ((float)rnd.NextDouble() * _gridSize, (float)rnd.NextDouble() * _gridSize);
 				float scale = (float)(rnd.NextDouble () * 0.002f + 0.004f)*_scale;
-				vaoi.modelMats[i] =Matrix4.CreateRotationX (MathHelper.PiOver2) * Matrix4.CreateScale (scale)* Matrix4.CreateTranslation(pos.X, pos.Y, 0f);
+				vaoi.Datas[i].modelMats =Matrix4.CreateRotationX (MathHelper.PiOver2) * Matrix4.CreateScale (scale)* Matrix4.CreateTranslation(pos.X, pos.Y, 0f);
 			}
 			vaoi.UpdateInstancesData ();			
 		}
@@ -856,12 +817,12 @@ namespace Ottd3D
 		void depthSortThread()
 		{
 			try {
-				Tetra.VAOItem[] transObjs = null;
+				Tetra.VAOItem<Tetra.VAOInstancedData>[] transObjs = null;
 				lock (transparentItemsVao.Meshes) {
 					transObjs = transparentItemsVao.Meshes.ToArray();
 				}
-				foreach (Tetra.VAOItem item in transObjs) {
-					depthSort (item.modelMats);	
+				foreach (Tetra.VAOItem<Tetra.VAOInstancedData> item in transObjs) {
+					depthSort (item.Datas);	
 				}
 
 			} catch (Exception ex) {
@@ -869,12 +830,13 @@ namespace Ottd3D
 			}
 			depthSortingDone = true;
 		}
-		void depthSort(Matrix4[] modelMats)
+		void depthSort(Tetra.VAOInstancedData[] datas)
 		{
 			Vector3 vEye = vEyeTarget + vLook * eyeDist;
-			Array.Sort(modelMats,
-				delegate(Matrix4 x, Matrix4 y) { return (new Vector2(y.Row3.X, y.Row3.Y) - vEye.Xy).LengthFast.
-					CompareTo	((new Vector2(x.Row3.X, x.Row3.Y) - vEye.Xy).LengthFast); });
+			Array.Sort(datas,
+				delegate(Tetra.VAOInstancedData x, Tetra.VAOInstancedData y) {
+					return (new Vector2(y.modelMats.Row3.X, y.modelMats.Row3.Y) - vEye.Xy).LengthFast.
+						CompareTo	((new Vector2(x.modelMats.Row3.X, x.modelMats.Row3.Y) - vEye.Xy).LengthFast); });
 			
 		}
 		private int frameCpt = 0;
@@ -882,31 +844,22 @@ namespace Ottd3D
 		{
 			base.OnUpdateFrame (e);
 
-			fps = (int)RenderFrequency;
-			if (frameCpt > 200) {
-				resetFps ();
-				frameCpt = 0;
-
-			}
-			frameCpt++;
-
 			Animation.ProcessAnimations ();
 
-
-			if (Keyboard [Key.ShiftLeft]) {
+			if (Keyboard [OpenTK.Input.Key.ShiftLeft]) {
 				float MoveSpeed = 10f;
 				//light movment
-				if (Keyboard [Key.Up])
+				if (Keyboard [OpenTK.Input.Key.Up])
 					vLight.X -= MoveSpeed;
-				else if (Keyboard [Key.Down])
+				else if (Keyboard [OpenTK.Input.Key.Down])
 					vLight.X += MoveSpeed;
-				else if (Keyboard [Key.Left])
+				else if (Keyboard [OpenTK.Input.Key.Left])
 					vLight.Y -= MoveSpeed;
-				else if (Keyboard [Key.Right])
+				else if (Keyboard [OpenTK.Input.Key.Right])
 					vLight.Y += MoveSpeed;
-				else if (Keyboard [Key.PageUp])
+				else if (Keyboard [OpenTK.Input.Key.PageUp])
 					vLight.Z += MoveSpeed;
-				else if (Keyboard [Key.PageDown])
+				else if (Keyboard [OpenTK.Input.Key.PageDown])
 					vLight.Z -= MoveSpeed;
 				updateShadersMatrices ();
 				gridCacheIsUpToDate = false;

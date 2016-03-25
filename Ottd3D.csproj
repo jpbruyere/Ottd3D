@@ -2,61 +2,101 @@
 <Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">Linux_x86</Platform>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProductVersion>8.0.30703</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{2D1D500E-469C-410B-A331-F1FD93820234}</ProjectGuid>
     <OutputType>Exe</OutputType>
+    <DefineConstants>__linux__</DefineConstants>
     <RootNamespace>Ottd3D</RootNamespace>
     <AssemblyName>Tests</AssemblyName>
-    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <StartupObject>Ottd3D.Ottd3DWindow</StartupObject>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <OutputPath>$(SolutionDir)/build/$(Configuration)</OutputPath>
+    <IntermediateOutputPath>$(SolutionDir)/build/obj/$(Configuration)</IntermediateOutputPath>
+    <CustomCommands>
+      <CustomCommands>
+        <Command type="Execute" command="${TargetName}" workingdir="${SolutionDir}/build/${ProjectConfigName}" />
+      </CustomCommands>
+    </CustomCommands>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|Linux_x86' ">
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
-    <OutputPath>bin\Debug</OutputPath>
-    <DefineConstants>DEBUG;__linux__</DefineConstants>
+    <DefineConstants>DEBUG;</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <ConsolePause>false</ConsolePause>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|Linux_x86' ">
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>none</DebugType>
     <Optimize>true</Optimize>
-    <OutputPath>bin\Release</OutputPath>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <ConsolePause>false</ConsolePause>
-    <DefineConstants>__linux__</DefineConstants>
+    <WarningLevel>0</WarningLevel>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
+  <Import Project="packages\gtk-sharp.Linux.3.14.3.14.7\build\net40\gtk-sharp.Linux.3.14.targets" Condition="Exists('packages\gtk-sharp.Linux.3.14.3.14.7\build\net40\gtk-sharp.Linux.3.14.targets')" />
   <ItemGroup>
-    <Reference Include="Mono.Cairo" />
     <Reference Include="System" />
     <Reference Include="System.Data" />
     <Reference Include="System.Drawing" />
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xml" />
     <Reference Include="OpenTK">
-      <HintPath>lib\opentk\Binaries\OpenTK\Release\OpenTK.dll</HintPath>
+      <HintPath>packages\OpenTK.1.1.2225.0\lib\net20\OpenTK.dll</HintPath>
     </Reference>
-    <Reference Include="OpenTK.Compatibility">
-      <HintPath>lib\opentk\Binaries\OpenTK\Release\OpenTK.Compatibility.dll</HintPath>
+    <Reference Include="atk-sharp">
+      <HintPath>packages\gtk-sharp.Linux.3.14.3.14.7\lib\net40\atk-sharp.dll</HintPath>
+    </Reference>
+    <Reference Include="cairo-sharp">
+      <HintPath>packages\gtk-sharp.Linux.3.14.3.14.7\lib\net40\cairo-sharp.dll</HintPath>
+    </Reference>
+    <Reference Include="gdk-sharp">
+      <HintPath>packages\gtk-sharp.Linux.3.14.3.14.7\lib\net40\gdk-sharp.dll</HintPath>
+    </Reference>
+    <Reference Include="gio-sharp">
+      <HintPath>packages\gtk-sharp.Linux.3.14.3.14.7\lib\net40\gio-sharp.dll</HintPath>
+    </Reference>
+    <Reference Include="glib-sharp">
+      <HintPath>packages\gtk-sharp.Linux.3.14.3.14.7\lib\net40\glib-sharp.dll</HintPath>
+    </Reference>
+    <Reference Include="gtk-dotnet">
+      <HintPath>packages\gtk-sharp.Linux.3.14.3.14.7\lib\net40\gtk-dotnet.dll</HintPath>
+    </Reference>
+    <Reference Include="gtk-sharp">
+      <HintPath>packages\gtk-sharp.Linux.3.14.3.14.7\lib\net40\gtk-sharp.dll</HintPath>
+    </Reference>
+    <Reference Include="pango-sharp">
+      <HintPath>packages\gtk-sharp.Linux.3.14.3.14.7\lib\net40\pango-sharp.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Shaders\CircleShader.cs" />
     <Compile Include="Shaders\BrushShader.cs" />
-    <Compile Include="Ottd3DMapEditor.cs" />
     <Compile Include="Ottd3DWindow.cs" />
     <Compile Include="Shaders\SingleLightShader.cs" />
     <Compile Include="Shaders\Mat4InstancedShader.cs" />
     <Compile Include="Shaders\VertexDispShader.cs" />
     <Compile Include="Track.cs" />
     <Compile Include="TrackSegment.cs" />
+    <Compile Include="lib\GOLib\OTKCrow\OpenTKGameWindow.cs">
+      <Link>OpenTKGameWindow.cs</Link>
+    </Compile>
+    <Compile Include="lib\GOLib\OTKCrow\OpenGL\QuadVAO.cs">
+      <Link>QuadVAO.cs</Link>
+    </Compile>
+    <Compile Include="lib\GOLib\OTKCrow\OpenGL\Shader.cs">
+      <Link>Shader.cs</Link>
+    </Compile>
+    <Compile Include="lib\GOLib\OTKCrow\OpenGL\TexturedShader.cs">
+      <Link>TexturedShader.cs</Link>
+    </Compile>
+    <Compile Include="lib\GOLib\OTKCrow\OpenGL\VertexArrayObject.cs">
+      <Link>VertexArrayObject.cs</Link>
+    </Compile>
+    <Compile Include="Ottd3DMapEditor.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="ui\" />
@@ -116,9 +156,9 @@
       <Project>{5490AD74-0BB3-438C-9DE4-EB7CFC68BCB5}</Project>
       <Name>GGL</Name>
     </ProjectReference>
-    <ProjectReference Include="lib\GOLib\GOLib.csproj">
+    <ProjectReference Include="lib\GOLib\Crow.csproj">
       <Project>{C2980F9B-4798-4C05-99E2-E174810F7C7B}</Project>
-      <Name>GOLib</Name>
+      <Name>Crow</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
@@ -150,5 +190,7 @@
     </None>
     <None Include="images\trees\3ds__tree1.3ds" />
     <None Include="images\trees\3ds__tree2.3ds" />
+    <None Include="OpenTK.dll.config" />
+    <None Include="packages.config" />
   </ItemGroup>
 </Project>

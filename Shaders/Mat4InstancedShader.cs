@@ -116,7 +116,7 @@ namespace Tetra
 			{
 				//vec3 nmap = normalize(texture2D( normal, texCoord ).rgb*2.0 - 1.0);
 				vec4 diffTex = texture( tex, texCoord) * Color;
-				if (diffTex.a < 0.5)
+				if (diffTex.a == 0.0)
 					discard;
 
 				vec3 N = CalcBumpedNormal();

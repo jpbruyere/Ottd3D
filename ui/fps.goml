@@ -25,7 +25,7 @@
 				<Label Name="labUpdate" Text="{update}" FontSize="12" Width="60" TextAlignment="Center" Background="DarkGreen"/>
 			</HorizontalStack>
 			<HorizontalStack>
-				<Label Text="Fps:" Width = "30" VerticalAlignment="Center"  TextAlignment="LeftCenter"/>
+				<Label Text="Fps:" Width = "30" VerticalAlignment="Center"  TextAlignment="Center"/>
 				<Label Text="{fps}" Font="droid bold, 12"
 					TextAlignment="Center" Background="AoEnglish"/>
 			</HorizontalStack>

@@ -8,11 +8,9 @@ using OpenTK.Graphics.OpenGL;
 using OpenTK.Input;
 
 using System.Diagnostics;
-
-using go;
 using System.Threading;
 using GGL;
-
+using Crow;
 
 namespace Ottd3D
 {
@@ -23,43 +21,6 @@ namespace Ottd3D
 		public void NotifyValueChange(string propName, object newValue)
 		{
 			ValueChanged.Raise(this, new ValueChangeEventArgs (propName, newValue));
-		}
-		#endregion
-
-		#region FPS
-		int _fps = 0;
-
-		public int fps {
-			get { return _fps; }
-			set {
-				if (_fps == value)
-					return;
-
-				_fps = value;
-
-				if (_fps > fpsMax) {
-					fpsMax = _fps;
-					NotifyValueChange ("fpsMax", fpsMax);
-				} else if (_fps < fpsMin) {
-					fpsMin = _fps;
-					NotifyValueChange ("fpsMin", fpsMin);
-				}
-
-				NotifyValueChange ("fps", _fps);
-				NotifyValueChange ("update",
-					this.updateTime.ElapsedMilliseconds.ToString () + " ms");
-			}
-		}
-
-		public int fpsMin = int.MaxValue;
-		public int fpsMax = 0;
-		public string update = "";
-
-		void resetFps ()
-		{
-			fpsMin = int.MaxValue;
-			fpsMax = 0;
-			_fps = 0;
 		}
 		#endregion
 
@@ -148,12 +109,12 @@ namespace Ottd3D
 		public static CircleShader circleShader;
 		public static GameLib.VertexDispShader gridShader;
 		public static GameLib.Shader simpleTexturedShader;
-		public static go.GLBackend.TexturedShader CacheRenderingShader;
+		public static GameLib.Shader CacheRenderingShader;
 
 		void initShaders()
 		{
 			circleShader = new CircleShader ("Ottd3D.Shaders.circle",_circleTexSize, _circleTexSize);
-			circleShader.Color = Color.White;
+			circleShader.Color = new Vector4 (1, 1, 1, 1);
 			circleShader.Radius = 0.01f;
 
 			splattingBrushShader = new BrushShader ("Ottd3D.Shaders.brush", _splatingSize, _splatingSize);
@@ -164,7 +125,7 @@ namespace Ottd3D
 
 			simpleTexturedShader = new GameLib.Shader ();
 
-			CacheRenderingShader = new go.GLBackend.TexturedShader();
+			CacheRenderingShader = new GameLib.Shader();
 			CacheRenderingShader.ModelViewMatrix = Matrix4.Identity;
 			CacheRenderingShader.Color = new Vector4(1f,1f,1f,1f);
 
@@ -327,7 +288,7 @@ namespace Ottd3D
 		#region Grid Cache
 		bool gridCacheIsUpToDate = false,
 			splatTextureIsUpToDate = true;
-		QuadVAO cacheQuad;
+		Crow.QuadVAO cacheQuad;
 		int gridCacheTex, gridSelectionTex;
 		int fboGrid, depthRenderbuffer;
 		DrawBuffersEnum[] dbe = new DrawBuffersEnum[]
@@ -472,7 +433,7 @@ namespace Ottd3D
 			NotifyValueChange ("PtrHM", ptrHM);
 		}
 
-		protected override void OnKeyDown (KeyboardKeyEventArgs e)
+		protected override void OnKeyDown (OpenTK.Input.KeyboardKeyEventArgs e)
 		{
 			base.OnKeyDown (e);
 			switch (e.Key) {
@@ -488,19 +449,19 @@ namespace Ottd3D
 		void initInterface()
 		{
 			this.MouseButtonUp += Mouse_ButtonUp;
-			this.MouseWheelChanged += new EventHandler<MouseWheelEventArgs>(Mouse_WheelChanged);
-			this.MouseMove += new EventHandler<MouseMoveEventArgs>(Mouse_Move);
+			this.MouseWheelChanged += Mouse_WheelChanged;
+			this.MouseMove += Mouse_Move;
 
-			LoadInterface("#Ottd3D.ui.fps.goml").DataSource = this;
-			LoadInterface("#Ottd3D.ui.menu.goml").DataSource = this;
-			hmEditMenu = LoadInterface("#Ottd3D.ui.heightEditionMenu.goml");
+			CrowInterface.LoadInterface("#Ottd3D.ui.fps.goml").DataSource = this;
+			CrowInterface.LoadInterface("#Ottd3D.ui.menu.goml").DataSource = this;
+			hmEditMenu = CrowInterface.LoadInterface("#Ottd3D.ui.heightEditionMenu.goml");
 			hmEditMenu.DataSource = this;
-			splattingMenu = LoadInterface ("#Ottd3D.ui.SpattingMenu.goml");
+			splattingMenu = CrowInterface.LoadInterface ("#Ottd3D.ui.SpattingMenu.goml");
 			splattingMenu.DataSource = this;
 			splattingMenu.Visible = false;
 		}
 		#region Mouse
-		void Mouse_Move(object sender, MouseMoveEventArgs e)
+		void Mouse_Move(object sender, OpenTK.Input.MouseMoveEventArgs e)
 		{			
 			if (e.XDelta != 0 || e.YDelta != 0)
 			{
@@ -522,7 +483,7 @@ namespace Ottd3D
 				}
 
 				if (e.Mouse.MiddleButton == OpenTK.Input.ButtonState.Pressed) {
-					if (Keyboard [Key.ShiftLeft]) {
+					if (Keyboard [OpenTK.Input.Key.ShiftLeft]) {
 						Vector3 v = new Vector3 (
 							Vector2.Normalize (vLook.Xy.PerpendicularLeft));
 						Vector3 tmp = Vector3.Transform (vLook, 
@@ -544,10 +505,10 @@ namespace Ottd3D
 			}
 
 		}			
-		void Mouse_WheelChanged(object sender, MouseWheelEventArgs e)
+		void Mouse_WheelChanged(object sender, OpenTK.Input.MouseWheelEventArgs e)
 		{
 			float speed = ZoomSpeed * eyeDist;
-			if (Keyboard [Key.ShiftLeft]) {
+			if (Keyboard [OpenTK.Input.Key.ShiftLeft]) {
 				if (e.Delta > 0)
 					splatBrushRadius *= 1.25f;
 				else
@@ -560,7 +521,7 @@ namespace Ottd3D
 				circleShader.Update ();
 				return;
 			}
-			else if (Keyboard[Key.ControlLeft])
+			else if (Keyboard[OpenTK.Input.Key.ControlLeft])
 				speed *= 20.0f;
 
 			eyeDistTarget -= e.Delta * speed;
@@ -570,7 +531,7 @@ namespace Ottd3D
 				eyeDistTarget = zFar-100;
 			Animation.StartAnimation(new Animation<float> (this, "EyeDist", eyeDistTarget, (eyeDistTarget - eyeDist) * 0.2f));
 		}
-		void Mouse_ButtonUp (object sender, MouseButtonEventArgs e)
+		void Mouse_ButtonUp (object sender, OpenTK.Input.MouseButtonEventArgs e)
 		{
 		}
 		#endregion
@@ -610,7 +571,7 @@ namespace Ottd3D
 			splatBrush.Y = (float)Array.IndexOf (groundTextures, SecondSplatTextureName)/255f;
 			NotifyValueChange ("SecondSplatTextureName", SecondSplatTextureName);
 		}
-		void onSave(object sender, MouseButtonEventArgs e){
+		void onSave(object sender, Crow.MouseButtonEventArgs e){
 			Texture.Save (splattingBrushShader.OutputTex, @"splat.png");
 			Texture.Save (hmGenerator.OutputTex, @"heightmap.png");
 		}
@@ -655,36 +616,25 @@ namespace Ottd3D
 
 			getHeightMapData ();
 		}
-			
-		private int frameCpt = 0;
+
 		protected override void OnUpdateFrame (FrameEventArgs e)
 		{
 			base.OnUpdateFrame (e);
 
-			fps = (int)RenderFrequency;
-			if (frameCpt > 200) {
-				resetFps ();
-				frameCpt = 0;
-
-			}
-			frameCpt++;
-
-			if (hoverWidget == null) {
-				if (CurrentState == EditorState.GroundTexturing) {
-					MouseState mouse = Mouse.GetState ();
-					if (mouse [MouseButton.Left]) {
+			if (CrowInterface.hoverWidget == null) {
+				if (CurrentState == EditorState.GroundTexturing) {					
+					if (Mouse [OpenTK.Input.MouseButton.Left]) {
 						splattingBrushShader.Color = splatBrush;
 						updateSplatting ();
-					} else if (mouse [MouseButton.Right]) {
+					} else if (Mouse [OpenTK.Input.MouseButton.Right]) {
 						splattingBrushShader.Color = new Vector4 (splatBrush.X, splatBrush.Y, -1f / 255f, 1f);
 						updateSplatting ();
 					}
-				} else if (CurrentState == EditorState.GroundLeveling) {
-					MouseState mouse = Mouse.GetState ();
-					if (mouse [MouseButton.Left]) {
+				} else if (CurrentState == EditorState.GroundLeveling) {					
+					if (Mouse [OpenTK.Input.MouseButton.Left]) {
 						hmGenerator.Color = new Vector4 (0f, 1f / 255f, 0f, 1f);
 						updateHeightMap ();
-					} else if (mouse [MouseButton.Right]) {
+					} else if (Mouse [OpenTK.Input.MouseButton.Right]) {
 						hmGenerator.Color = new Vector4 (0f, -1f / 255f, 0f, 1f);
 						updateHeightMap ();
 					}				
@@ -695,20 +645,20 @@ namespace Ottd3D
 			Animation.ProcessAnimations ();
 
 
-			if (Keyboard [Key.ShiftLeft]) {
+			if (Keyboard [OpenTK.Input.Key.ShiftLeft]) {
 				float MoveSpeed = 1f;
 				//light movment
-				if (Keyboard [Key.Up])
+				if (Keyboard [OpenTK.Input.Key.Up])
 					vLight.X -= MoveSpeed;
-				else if (Keyboard [Key.Down])
+				else if (Keyboard [OpenTK.Input.Key.Down])
 					vLight.X += MoveSpeed;
-				else if (Keyboard [Key.Left])
+				else if (Keyboard [OpenTK.Input.Key.Left])
 					vLight.Y -= MoveSpeed;
-				else if (Keyboard [Key.Right])
+				else if (Keyboard [OpenTK.Input.Key.Right])
 					vLight.Y += MoveSpeed;
-				else if (Keyboard [Key.PageUp])
+				else if (Keyboard [OpenTK.Input.Key.PageUp])
 					vLight.Z += MoveSpeed;
-				else if (Keyboard [Key.PageDown])
+				else if (Keyboard [OpenTK.Input.Key.PageDown])
 					vLight.Z -= MoveSpeed;
 				gridCacheIsUpToDate = false;
 				//GL.Light (LightName.Light0, LightParameter.Position, vLight);

@@ -9,14 +9,12 @@
 			Template="#Ottd3D.ui.SplatTexPopTemplate.goml">
 			<ListBox Data="{GroundTextures}" Width="-1" Height="300" Margin="20"
 						ItemTemplate="#Ottd3D.ui.BrushImageItem.goml"
-						Template="#go.Templates.ScrollingListBox.goml" 
 						SelectedItemChanged="onFirstBrushChanged"/>
 		</Popper>
 		<Popper Title="Second texture" Image="{SecondSplatTextureName}"
 			Template="#Ottd3D.ui.SplatTexPopTemplate.goml">
 			<ListBox Data="{GroundTextures}" Width="-1" Height="300" Margin="20"
 						ItemTemplate="#Ottd3D.ui.BrushImageItem.goml"
-						Template="#go.Templates.ScrollingListBox.goml" 
 						SelectedItemChanged="onSecondBrushChanged"/>
 		</Popper>
 		<Button Text="Save" MouseClick="onSave"/>
