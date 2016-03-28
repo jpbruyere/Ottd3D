@@ -26,10 +26,9 @@ namespace Ottd3D
 {
 	public class CircleShader : ShadedTexture
 	{
-		public CircleShader (string effectId, int _width = -1, int _height = -1):
-		base(effectId,_width,_height)
-		{
-		}
+		public CircleShader (string effectId, int _width = -1, int _height = -1, int initTex = 0)
+			: base(effectId, _width, _height, initTex)
+		{}
 
 		int radiusLoc;
 

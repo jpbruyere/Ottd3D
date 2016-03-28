@@ -29,9 +29,9 @@ namespace Ottd3D
 	public class BrushShader : CircleShader
 	{
 		#region CTOR
-		public BrushShader (string effectId, int _width = -1, int _height = -1):
-		base(effectId,_width,_height)
-		{
+		public BrushShader (string effectId, int _width = -1, int _height = -1, int initTexture = 0)
+			:base(effectId, _width, _height, initTexture)
+		{			
 			clear = false;
 		}
 		#endregion
@@ -66,8 +66,10 @@ namespace Ottd3D
 
 		protected override void initFbo ()
 		{
-			tex = new Texture (width, height);
-			evenTex = new Texture (width, height);
+			if (!GL.IsTexture (tex))
+				tex = new Texture (width, height);
+			if (!GL.IsTexture (evenTex))
+				evenTex = new Texture (width, height);
 
 			GL.GenFramebuffers(1, out fbo);
 

@@ -53,7 +53,7 @@ namespace Ottd3D
 				tmp.fogColor = new Vector4(0.7f,0.7f,0.7f,1.0f);
 				tmp.fStart = 100.0f; // This is only for linear fog
 				tmp.fEnd = 300.0f; // This is only for linear fog
-				tmp.fDensity = 0.01f; // For exp and exp2 equation   
+				tmp.fDensity = 0.005f; // For exp and exp2 equation   
 				tmp.iEquation = 1; // 0 = linear, 1 = exp, 2 = exp2
 				return tmp;
 			}
@@ -98,6 +98,9 @@ namespace Ottd3D
 		public Vector2 MousePos {
 			get { return new Vector2 (Mouse.X, Mouse.Y); }
 		}
+
+		Tetra.IndexedVAO<Tetra.VAOInstancedData> landItemsVao, transparentItemsVao;
+		Terrain terrain;
 
 
 		void initGL(){
@@ -150,7 +153,7 @@ namespace Ottd3D
 			#endregion
 
 			const float treezone = 32;
-			const int treeCount = 2000;
+			const int treeCount = 50;
 			transparentItemsVao = new Tetra.IndexedVAO<Tetra.VAOInstancedData> ();
 
 			//====TREE1====
@@ -174,7 +177,7 @@ namespace Ottd3D
 			//				"#Ottd3D.images.trees.pinet1.png",5f);
 			addRandomTrees (transparentItemsVao, treeCount,
 				"images/trees/obj__pinet2.obj",
-				"images/trees/pinet2.png",2f);
+				"images/trees/pinet2.png",3f);
 			//			addRandomTrees (transparentItemsVao, treeCount,
 			//				"#Ottd3D.images.trees.obj__tree1.obj",
 			//				"#Ottd3D.images.trees.tree1.png",5f);
@@ -189,6 +192,52 @@ namespace Ottd3D
 			transparentItemsVao.BuildBuffers ();
 
 
+		}
+		void drawScene(){
+			terrain.Render ();
+
+			GL.Disable (EnableCap.Blend);
+			objShader.Enable ();
+
+			landItemsVao.Bind ();
+			landItemsVao.Render (PrimitiveType.Triangles);
+			landItemsVao.Unbind ();
+
+
+			//			GL.Enable (EnableCap.Blend);
+			//			GL.Enable (EnableCap.AlphaTest);
+
+			transparentItemsVao.Bind ();
+
+			//GL.Disable (EnableCap.Blend);
+			//GL.BlendFunc(BlendingFactorSrc.One, BlendingFactorDest.Zero );
+			//			GL.BlendFunc (BlendingFactorSrc.SrcAlpha, BlendingFactorDest.OneMinusSrcAlpha);
+			//			GL.DepthMask (false);
+
+
+			//			GL.AlphaFunc (AlphaFunction.Greater, 0.0f);
+			//			GL.DepthMask (false);
+
+			GL.Enable (EnableCap.Blend);
+			//GL.Disable (EnableCap.DepthTest);
+
+			transparentItemsVao.Render (PrimitiveType.Triangles);
+
+			//GL.Enable (EnableCap.DepthTest);
+
+			//			GL.AlphaFunc (AlphaFunction.Equal, 1.0f);
+			//			GL.DepthMask (true);
+			//			transparentItemsVao.Render (PrimitiveType.Triangles);
+
+			//GL.Disable (EnableCap.Blend);
+			//GL.Disable (EnableCap.AlphaTest);
+			//
+			//			GL.BlendFunc (BlendingFactorSrc.SrcAlpha, BlendingFactorDest.OneMinusSrcAlpha);
+
+
+			transparentItemsVao.Unbind ();
+
+			RailTrack.Render ();			
 		}
 
 		#region Shaders
@@ -235,11 +284,6 @@ namespace Ottd3D
 
 		#endregion
 
-
-		Tetra.IndexedVAO<Tetra.VAOInstancedData> landItemsVao, transparentItemsVao;
-
-
-		Terrain terrain;
 
 
 
@@ -307,10 +351,12 @@ namespace Ottd3D
 		}
 		void Mouse_Move(object sender, OpenTK.Input.MouseMoveEventArgs e)
 		{
+			
 			if (e.XDelta != 0 || e.YDelta != 0)
 			{
 				NotifyValueChanged("MousePos", MousePos);
 				//selection texture has clientRect size and 4 bytes per pixel, so
+
 				terrain.MouseMove(e);
 
 				switch (CurrentState) {
@@ -360,6 +406,18 @@ namespace Ottd3D
 		void Mouse_WheelChanged(object sender, OpenTK.Input.MouseWheelEventArgs e)
 		{
 			float speed = ZoomSpeed;
+
+			if (Keyboard [OpenTK.Input.Key.ShiftLeft]) {				
+				if (e.Delta > 0)
+					terrain.SelectionRadius *= 1.25f;
+				else
+					terrain.SelectionRadius *= 0.8f;
+				if (terrain.SelectionRadius > 0.5f)
+					terrain.SelectionRadius = 0.5f;
+				else if (terrain.SelectionRadius < 0.0125f)
+					terrain.SelectionRadius = 0.0125f;				
+				return;
+			}
 			if (Keyboard[OpenTK.Input.Key.ShiftLeft])
 				speed *= 0.1f;
 			else if (Keyboard[OpenTK.Input.Key.ControlLeft])
@@ -523,49 +581,7 @@ namespace Ottd3D
 		}
 		public override void OnRender (FrameEventArgs e)
 		{
-			terrain.Render ();
-
-			objShader.Enable ();
-
-			landItemsVao.Bind ();
-			landItemsVao.Render (PrimitiveType.Triangles);
-			landItemsVao.Unbind ();
-
-
-			//			GL.Enable (EnableCap.Blend);
-			//			GL.Enable (EnableCap.AlphaTest);
-
-			transparentItemsVao.Bind ();
-
-			//GL.Disable (EnableCap.Blend);
-			//GL.BlendFunc(BlendingFactorSrc.One, BlendingFactorDest.Zero );
-			//			GL.BlendFunc (BlendingFactorSrc.SrcAlpha, BlendingFactorDest.OneMinusSrcAlpha);
-			//			GL.DepthMask (false);
-
-
-			//			GL.AlphaFunc (AlphaFunction.Greater, 0.0f);
-			//			GL.DepthMask (false);
-
-			GL.Enable (EnableCap.Blend);
-			//GL.Disable (EnableCap.DepthTest);
-
-			transparentItemsVao.Render (PrimitiveType.Triangles);
-
-			//GL.Enable (EnableCap.DepthTest);
-
-			//			GL.AlphaFunc (AlphaFunction.Equal, 1.0f);
-			//			GL.DepthMask (true);
-			//			transparentItemsVao.Render (PrimitiveType.Triangles);
-
-			//GL.Disable (EnableCap.Blend);
-			//GL.Disable (EnableCap.AlphaTest);
-			//
-			//			GL.BlendFunc (BlendingFactorSrc.SrcAlpha, BlendingFactorDest.OneMinusSrcAlpha);
-
-
-			transparentItemsVao.Unbind ();
-
-			RailTrack.Render ();
+			drawScene ();
 		}
 		#endregion
 			

@@ -23,11 +23,19 @@ using GGL;
 using OpenTK;
 using OpenTK.Graphics.OpenGL;
 using Crow;
+using System.Diagnostics;
 
 namespace Ottd3D
 {
 	public class Terrain : IValueChange, IDisposable
 	{
+		public enum State
+		{
+			Play,
+			GroundLeveling,
+			GroundTexturing
+		}
+
 		#region IValueChange implementation
 		public event EventHandler<ValueChangeEventArgs> ValueChanged;
 		public void NotifyValueChanged(string propName, object newValue)
@@ -39,7 +47,7 @@ namespace Ottd3D
 		int _gridSize = 256;
 		int _hmSize = 256;
 		int _splatingSize = 2048;
-		float heightScale = 50.0f;
+		float heightScale = 20.0f;
 		int _circleTexSize = 1024;
 
 		string[] groundTextures = new string[]
@@ -64,6 +72,7 @@ namespace Ottd3D
 		byte[] hmData;//height map
 		byte[] selectionMap;//has grid positions as colors
 
+		State CurrentState = State.GroundLeveling;
 		/// <summary> pointer in height map texture </summary>
 		int ptrHM = 0;
 		/// <summary> selected position in world coordinate </summary>
@@ -93,10 +102,11 @@ namespace Ottd3D
 				_hmSize = value;
 			}
 		}
-		public int SplatingSize {
-			get { return _splatingSize; }
+		public float SelectionRadius {
+			get { return circleShader.Radius; }
 			set {
-				_splatingSize = value;
+				circleShader.Radius = value;
+				circleShader.Update ();
 			}
 		}
 		public float HeightScale {
@@ -126,9 +136,9 @@ namespace Ottd3D
 		vaoMesh gridMesh;
 		vaoMesh selMesh;
 
+		BrushShader hmGenerator;
 		Ottd3D.VertexDispShader gridShader;
 		CircleShader circleShader;
-
 		GameLib.Shader simpleTexturedShader;
 		Tetra.Shader CacheRenderingShader;
 
@@ -150,7 +160,7 @@ namespace Ottd3D
 			Tetra.Texture.ResetToDefaultLoadingParams ();
 
 			circleShader = new CircleShader
-				("GGL.Shaders.GameLib.red",_circleTexSize, _circleTexSize);
+				("Ottd3D.Shaders.circle",_circleTexSize, _circleTexSize);
 			circleShader.Color = new Vector4 (1, 1, 1, 1);
 			circleShader.Radius = 0.01f;
 			circleShader.Update ();
@@ -159,6 +169,8 @@ namespace Ottd3D
 			simpleTexturedShader = new GameLib.Shader ();
 			CacheRenderingShader = new Tetra.Shader();			
 
+			hmGenerator = new BrushShader ("Ottd3D.Shaders.hmBrush",_hmSize, _hmSize, gridShader.DisplacementMap);
+			Texture.SetTexFilterNeareast (hmGenerator.InputTex);
 		}
 
 		#region CTOR
@@ -206,7 +218,25 @@ namespace Ottd3D
 					(float)selectionMap [selPtr] + (float)selectionMap [selPtr + 1] / 255f, 
 					(float)selectionMap [selPtr + 2] + (float)selectionMap [selPtr + 3] / 255f, 0f);
 			}
-			updatePtrHm ();			
+			updatePtrHm ();
+
+			if (CurrentState == State.GroundTexturing) {					
+//				if (Mouse [OpenTK.Input.MouseButton.Left]) {
+//					splattingBrushShader.Color = splatBrush;
+//					updateSplatting ();
+//				} else if (Mouse [OpenTK.Input.MouseButton.Right]) {
+//					splattingBrushShader.Color = new Vector4 (splatBrush.X, splatBrush.Y, -1f / 255f, 1f);
+//					updateSplatting ();
+//				}
+			} else if (CurrentState == State.GroundLeveling) {					
+				if (e.Mouse [OpenTK.Input.MouseButton.Left]) {
+					hmGenerator.Color = new Vector4 (0f, 1f / 255f, 0f, 1f);
+					updateHeightMap ();
+				} else if (e.Mouse [OpenTK.Input.MouseButton.Right]) {
+					hmGenerator.Color = new Vector4 (0f, -1f / 255f, 0f, 1f);
+					updateHeightMap ();
+				}				
+			}
 		}
 
 		void updatePtrHm()
@@ -216,7 +246,7 @@ namespace Ottd3D
 			NotifyValueChanged ("PtrHM", ptrHM);
 		}
 		void updateSelMesh(){
-			selMesh = new vaoMesh ((float)Math.Floor(selPos.X)+0.5f, (float)Math.Floor(selPos.Y)+0.5f, selPos.Z, 1.0f, 1.0f);				
+			selMesh = new vaoMesh ((float)Math.Floor(selPos.X)+0.5f, (float)Math.Floor(selPos.Y)+0.5f, selPos.Z, 100.0f, 100.0f);				
 		}
 
 		void initGrid()
@@ -270,6 +300,8 @@ namespace Ottd3D
 			if (selMesh == null)
 				return;
 
+			GL.Enable (EnableCap.Blend);
+
 			simpleTexturedShader.Enable ();
 
 			GL.BindTexture (TextureTarget.Texture2D, circleShader.OutputTex);
@@ -288,18 +320,15 @@ namespace Ottd3D
 			GL.BindTexture (TextureTarget.Texture2D, 0);
 		}
 		void updateHeightMap()
-		{
-			GL.BindTexture (TextureTarget.Texture2D, gridShader.DisplacementMap);
-
-			GL.TexSubImage2D (TextureTarget.Texture2D,
-				0, 0, 0, _hmSize, _hmSize, PixelFormat.Bgra, PixelType.UnsignedByte, hmData);
-
-			GL.BindTexture (TextureTarget.Texture2D, 0);
-			gridCacheIsUpToDate = false;
-			heightMapIsUpToDate = true;
+		{			
+			float radiusDiv = 40f / (float)_hmSize;
+			hmGenerator.Radius = circleShader.Radius * 0.5f;
+			hmGenerator.Center = SelectionPos.Xy/_gridSize;
+			hmGenerator.Update ();
 			getHeightMapData ();
-			//force update of selection mesh
-			SelectionPos = selPos;
+			gridShader.DisplacementMap = hmGenerator.OutputTex;
+			gridCacheIsUpToDate = false;
+
 		}
 		void getSelectionTextureData()
 		{
@@ -409,7 +438,7 @@ namespace Ottd3D
 
 			gridMesh.Render(PrimitiveType.TriangleStrip, gridMesh.indices);
 
-			GL.DrawBuffers(1, new DrawBuffersEnum[]{DrawBuffersEnum.ColorAttachment0});
+			//GL.DrawBuffers(1, new DrawBuffersEnum[]{DrawBuffersEnum.ColorAttachment0});
 
 
 

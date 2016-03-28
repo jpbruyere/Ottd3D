@@ -7,7 +7,7 @@ out vec4 out_frag_color;
 uniform float radius;
 uniform vec4 color;
 
-float border = 0.002;
+float border = 0.003;
 vec4 bkg_color = vec4(0.0, 0.0, 0.0, 0.0);
 vec2 circle_center = vec2(0.5, 0.5);   
 
