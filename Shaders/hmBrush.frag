@@ -28,5 +28,4 @@ void main ()
 	else
 		gl_FragColor = vec4( color.rgb * t + c.rgb, 1.0);
 
-//	gl_FragColor = vec4( 0.0, 0.3, 0.1, 1.0);
 } 

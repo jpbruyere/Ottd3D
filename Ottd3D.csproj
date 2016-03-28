@@ -102,6 +102,7 @@
     <Compile Include="Ottd3DWindow.cs" />
     <Compile Include="Terrain.cs" />
     <Compile Include="Shaders\Mat4InstancedShader.cs" />
+    <Compile Include="Shaders\CacheRenderingShader.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="ui\" />
@@ -127,7 +128,6 @@
     <EmbeddedResource Include="images\ground_crackedv_d.jpg" />
     <EmbeddedResource Include="images\ground_cracks2v_d.jpg" />
     <EmbeddedResource Include="images\ground_cracks2y_d.jpg" />
-    <EmbeddedResource Include="ui\menu.goml" />
     <EmbeddedResource Include="images\grass.jpg" />
     <EmbeddedResource Include="Shaders\circle.frag" />
     <EmbeddedResource Include="Shaders\brush.frag" />
@@ -146,6 +146,8 @@
     <EmbeddedResource Include="images\skybox\top.bmp" />
     <EmbeddedResource Include="ui\fps.crow" />
     <EmbeddedResource Include="ui\tmpWindow.crow" />
+    <EmbeddedResource Include="Shaders\coloredSquare.frag" />
+    <EmbeddedResource Include="ui\menu.crow" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="lib\GGL\GGL.csproj">

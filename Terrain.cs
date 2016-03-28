@@ -32,7 +32,8 @@ namespace Ottd3D
 		public enum State
 		{
 			Play,
-			GroundLeveling,
+			HMEdition,
+			ClearHM,
 			GroundTexturing
 		}
 
@@ -72,13 +73,52 @@ namespace Ottd3D
 		byte[] hmData;//height map
 		byte[] selectionMap;//has grid positions as colors
 
-		State CurrentState = State.GroundLeveling;
+		Matrix4	modelview,
+				projection;
+
+		State currentState = State.HMEdition;
+
+		public State CurrentState {
+			get { return currentState; }
+			set {
+				if (currentState == value)
+					return;
+				
+				currentState = value;
+
+				if (circleShader != null)
+					circleShader.Dispose ();
+
+				switch (currentState) {
+				case State.Play:
+					circleShader = new CircleShader
+						("Ottd3D.Shaders.coloredSquare", 32, 32);
+					circleShader.Color = new Vector4 (1f, 0f, 0f, 1.0f);
+					circleShader.Update ();
+					updateSelMesh ();
+					break;
+				case State.HMEdition:
+					circleShader = new CircleShader ("Ottd3D.Shaders.circle", _circleTexSize, _circleTexSize);
+					circleShader.Color = new Vector4 (1, 1, 1, 1);
+					SelectionRadius = selectionRadius;
+					updateSelMesh ();
+					break;
+				case State.ClearHM:
+					break;
+				case State.GroundTexturing:
+					break;
+				default:
+					break;
+				}
+			}
+		}
+
 		/// <summary> pointer in height map texture </summary>
 		int ptrHM = 0;
 		/// <summary> selected position in world coordinate </summary>
 		Vector3 selPos = Vector3.Zero;
-
 		Point<int> selCase;
+		float selectionRadius = 0.01f;
 
 		System.Drawing.Size cacheSize;
 
@@ -102,10 +142,12 @@ namespace Ottd3D
 				_hmSize = value;
 			}
 		}
+
 		public float SelectionRadius {
-			get { return circleShader.Radius; }
+			get { return selectionRadius; }
 			set {
-				circleShader.Radius = value;
+				selectionRadius = value;
+				circleShader.Radius = selectionRadius;
 				circleShader.Update ();
 			}
 		}
@@ -139,8 +181,8 @@ namespace Ottd3D
 		BrushShader hmGenerator;
 		Ottd3D.VertexDispShader gridShader;
 		CircleShader circleShader;
-		GameLib.Shader simpleTexturedShader;
-		Tetra.Shader CacheRenderingShader;
+		Tetra.Shader simpleTexShader;
+		Tetra.Shader cacheShader;
 
 		void initShaders(){
 			gridShader = new Ottd3D.VertexDispShader 
@@ -159,15 +201,8 @@ namespace Ottd3D
 			}
 			Tetra.Texture.ResetToDefaultLoadingParams ();
 
-			circleShader = new CircleShader
-				("Ottd3D.Shaders.circle",_circleTexSize, _circleTexSize);
-			circleShader.Color = new Vector4 (1, 1, 1, 1);
-			circleShader.Radius = 0.01f;
-			circleShader.Update ();
-
-
-			simpleTexturedShader = new GameLib.Shader ();
-			CacheRenderingShader = new Tetra.Shader();			
+			simpleTexShader = new Tetra.Shader ();
+			cacheShader = new Tetra.Shader();			
 
 			hmGenerator = new BrushShader ("Ottd3D.Shaders.hmBrush",_hmSize, _hmSize, gridShader.DisplacementMap);
 			Texture.SetTexFilterNeareast (hmGenerator.InputTex);
@@ -186,22 +221,40 @@ namespace Ottd3D
 				"#Ottd3D.images.skybox.top.bmp",
 				"#Ottd3D.images.skybox.front.bmp",
 				"#Ottd3D.images.skybox.back.bmp");
+
+			CurrentState = State.Play;
 		}
 		#endregion
 
 		public void Update(){
-			if (heightMapIsUpToDate)
-				return;
-
-			updateHeightMap ();			
+			switch (CurrentState) {
+			case State.Play:
+				break;
+			case State.HMEdition:
+				if (heightMapIsUpToDate)
+					return;
+				updateHeightMap ();			
+				break;
+			case State.ClearHM:
+				hmGenerator.Clear ();
+				getHeightMapData ();
+				gridShader.DisplacementMap = hmGenerator.OutputTex;
+				gridCacheIsUpToDate = false;
+				CurrentState = State.HMEdition;
+				break;
+			case State.GroundTexturing:
+				break;
+			default:
+				break;
+			}
 		}
-		public void UpdateMVP(Matrix4 projection, Matrix4 modelview, Vector3 vLook){
+
+		public void UpdateMVP(Matrix4 _projection, Matrix4 _modelview, Vector3 vLook){
+			projection = _projection;
+			modelview = _modelview;
 
 			skybox.shader.MVP =  Matrix4.CreateRotationX(-MathHelper.PiOver2) *  Matrix4.LookAt(Vector3.Zero, -vLook, Vector3.UnitZ) * projection;
-
-			simpleTexturedShader.ProjectionMatrix = projection;
-			simpleTexturedShader.ModelViewMatrix = modelview;
-			simpleTexturedShader.ModelMatrix = Matrix4.Identity;
+			simpleTexShader.MVP = modelview * projection;
 
 			gridCacheIsUpToDate = false;
 		}
@@ -228,7 +281,7 @@ namespace Ottd3D
 //					splattingBrushShader.Color = new Vector4 (splatBrush.X, splatBrush.Y, -1f / 255f, 1f);
 //					updateSplatting ();
 //				}
-			} else if (CurrentState == State.GroundLeveling) {					
+			} else if (CurrentState == State.HMEdition) {					
 				if (e.Mouse [OpenTK.Input.MouseButton.Left]) {
 					hmGenerator.Color = new Vector4 (0f, 1f / 255f, 0f, 1f);
 					updateHeightMap ();
@@ -246,7 +299,15 @@ namespace Ottd3D
 			NotifyValueChanged ("PtrHM", ptrHM);
 		}
 		void updateSelMesh(){
-			selMesh = new vaoMesh ((float)Math.Floor(selPos.X)+0.5f, (float)Math.Floor(selPos.Y)+0.5f, selPos.Z, 100.0f, 100.0f);				
+			float selMeshSize = 1.0f;
+			switch (CurrentState) {
+			case State.HMEdition:
+			case State.GroundTexturing:
+				selMeshSize = 100.0f;
+				break;
+			}
+
+			selMesh = new vaoMesh ((float)Math.Floor(selPos.X)+0.5f, (float)Math.Floor(selPos.Y)+0.5f, selPos.Z, selMeshSize, selMeshSize);
 		}
 
 		void initGrid()
@@ -302,7 +363,7 @@ namespace Ottd3D
 
 			GL.Enable (EnableCap.Blend);
 
-			simpleTexturedShader.Enable ();
+			simpleTexShader.Enable ();
 
 			GL.BindTexture (TextureTarget.Texture2D, circleShader.OutputTex);
 			selMesh.Render(PrimitiveType.TriangleStrip);
@@ -362,7 +423,7 @@ namespace Ottd3D
 			selectionMap = new byte[CacheSize.Width * CacheSize.Height*4];
 
 			cacheQuad = new QuadVAO (0, 0, CacheSize.Width, CacheSize.Height, 0, 1, 1, -1);
-			CacheRenderingShader.MVP = Matrix4.CreateOrthographicOffCenter 
+			cacheShader.MVP = Matrix4.CreateOrthographicOffCenter 
 				(0, CacheSize.Width, 0, CacheSize.Height, 0, 1);
 
 			initGridFbo ();
@@ -372,7 +433,7 @@ namespace Ottd3D
 
 			GL.Disable (EnableCap.DepthTest);
 
-			CacheRenderingShader.Enable ();
+			cacheShader.Enable ();
 
 			GL.ActiveTexture (TextureUnit.Texture0);
 			GL.BindTexture (TextureTarget.Texture2D, gridCacheTex);
@@ -462,6 +523,13 @@ namespace Ottd3D
 		}
 		#endregion
 
+		#endregion
+
+
+		#region Interface
+		void onClear(object sender, MouseButtonEventArgs e){
+			CurrentState = State.ClearHM;
+		}
 		#endregion
 
 		#region IDisposable implementation

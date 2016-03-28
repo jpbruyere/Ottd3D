@@ -321,6 +321,8 @@ namespace Ottd3D
 
 			CrowInterface.LoadInterface("#Ottd3D.ui.fps.crow").DataSource = this;
 			//LoadInterface("#Ottd3D.ui.menu.goml").DataSource = this;
+			CrowInterface.LoadInterface("#Ottd3D.ui.heightEditionMenu.goml").DataSource = terrain;
+			CrowInterface.LoadInterface("#Ottd3D.ui.menu.crow").DataSource = this;
 		}
 			
 		#region Mouse
@@ -452,13 +454,20 @@ namespace Ottd3D
 		}
 		#endregion
 
-		void onGameStateChange (object sender, ValueChangeEventArgs e)
+		void onGameStateChange (object sender, EventArgs e)
 		{
-			if (e.MemberName != "IsChecked" || (bool)e.NewValue != true)
-				return;
-			
-			//force update of position mesh
-			//SelectionPos = selPos;
+			GraphicObject g = sender as GraphicObject;
+			switch (g.Name) {
+			case "Play":
+				terrain.CurrentState = Terrain.State.Play;
+				break;
+			case "HMEdition":
+				terrain.CurrentState = Terrain.State.HMEdition;
+				break;
+			case "GroundTexturing":
+				terrain.CurrentState = Terrain.State.GroundTexturing;
+				break;
+			}
 		}
 		#endregion
 
@@ -523,9 +532,9 @@ namespace Ottd3D
 
 			initShaders ();
 
-			initInterface ();
-
 			initScene ();
+
+			initInterface ();
 		}
 		protected override void OnUpdateFrame (FrameEventArgs e)
 		{
