@@ -19,59 +19,28 @@
 //  You should have received a copy of the GNU General Public License
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 using System;
-using go;
 using GGL;
 using OpenTK;
 using OpenTK.Graphics.OpenGL;
+using Crow;
 
 namespace Ottd3D
 {
-	public class Terrain : IValueChange
+	public class Terrain : IValueChange, IDisposable
 	{
 		#region IValueChange implementation
 		public event EventHandler<ValueChangeEventArgs> ValueChanged;
-		public void NotifyValueChange(string propName, object newValue)
+		public void NotifyValueChanged(string propName, object newValue)
 		{
 			ValueChanged.Raise(this, new ValueChangeEventArgs (propName, newValue));
 		}
 		#endregion
 
-		#region Shaders
-		static GameLib.VertexDispShader gridShader;
-		static go.GLBackend.TexturedShader CacheRenderingShader;
-
-		void initShaders()
-		{
-			gridShader = new GameLib.VertexDispShader 
-				("Ottd3D.Shaders.VertDisp.vert", "Ottd3D.Shaders.Grid.frag");
-
-			CacheRenderingShader = new go.GLBackend.TexturedShader();			
-
-			gridShader.DisplacementMap = new Texture (HeightMapPath, false);
-			gridShader.LightPos = vLight;
-			gridShader.MapSize = new Vector2 (_gridSize, _gridSize);
-			gridShader.HeightScale = heightScale;
-
-			gridShader.SplatTexture = new Texture (SplatMapPath, false);
-
-			Texture.SetTexFilterNeareast (gridShader.DisplacementMap);
-			Texture.SetTexFilterNeareast (gridShader.SplatTexture);
-		}
-
-		void updateShadersMatrices(){
-			gridShader.ProjectionMatrix = projection;
-			gridShader.ModelViewMatrix = modelview;
-			gridShader.ModelMatrix = Matrix4.Identity;
-		}
-
-		#endregion
-
-
-		const int _gridSize = 256;
-		const int _hmSize = 256;
-		const int _splatingSize = 2048;
-		const int _circleTexSize = 1024;
-		const float heightScale = 50.0f;
+		int _gridSize = 256;
+		int _hmSize = 256;
+		int _splatingSize = 2048;
+		float heightScale = 50.0f;
+		int _circleTexSize = 1024;
 
 		string[] groundTextures = new string[]
 		{
@@ -91,10 +60,166 @@ namespace Ottd3D
 			"#Ottd3D.images.ground_cracks2y_d.jpg",
 			"#Ottd3D.images.ground_crackedo_d.jpg"			
 		};
-			
-		vaoMesh grid;
 
-		public void initGrid()
+		byte[] hmData;//height map
+		byte[] selectionMap;//has grid positions as colors
+
+		/// <summary> pointer in height map texture </summary>
+		int ptrHM = 0;
+		/// <summary> selected position in world coordinate </summary>
+		Vector3 selPos = Vector3.Zero;
+
+		Point<int> selCase;
+
+		System.Drawing.Size cacheSize;
+
+		public System.Drawing.Size CacheSize {
+			get { return cacheSize; }
+			set {
+				if (value == cacheSize)
+					return;
+				cacheSize = value;
+				createCache ();
+			}
+		}
+
+		public int GridSize {
+			get { return _gridSize; }
+			set { _gridSize = value; }
+		}
+		public int HmSize {
+			get { return _hmSize; }
+			set {
+				_hmSize = value;
+			}
+		}
+		public int SplatingSize {
+			get { return _splatingSize; }
+			set {
+				_splatingSize = value;
+			}
+		}
+		public float HeightScale {
+			get { return heightScale; }
+			set {
+				heightScale = value;
+			}
+		}
+		public string[] GroundTextures { get { return groundTextures; }}
+		/// <summary> Current case center in world coordinate </summary>
+		public Vector3 SelCenterPos { 
+			get { return new Vector3 ((float)Math.Floor (selPos.X) + 0.5f, (float)Math.Floor (selPos.Y) + 0.5f, selPos.Z); }
+		}
+		public Vector3 SelectionPos
+		{
+			get { return selPos; }
+			set {
+				selPos = value;
+				selPos.Z = hmData[((int)selPos.Y * _hmSize + (int)selPos.X) * 4 + 1] / 256f * heightScale;
+				updateSelMesh ();
+				NotifyValueChanged ("SelectionPos", selPos);
+			}
+		}
+		public int PtrHM{ get { return ptrHM; } }
+
+		Tetra.SkyBox skybox;
+		vaoMesh gridMesh;
+		vaoMesh selMesh;
+
+		Ottd3D.VertexDispShader gridShader;
+		CircleShader circleShader;
+
+		GameLib.Shader simpleTexturedShader;
+		Tetra.Shader CacheRenderingShader;
+
+		void initShaders(){
+			gridShader = new Ottd3D.VertexDispShader 
+				("Ottd3D.Shaders.VertDisp.vert", "Ottd3D.Shaders.Grid.frag");
+			
+			gridShader.MapSize = new Vector2 (_gridSize, _gridSize);
+			gridShader.HeightScale = heightScale;
+
+			Tetra.Texture.DefaultMagFilter = TextureMagFilter.Nearest;
+			Tetra.Texture.DefaultMinFilter = TextureMinFilter.Nearest;
+			Tetra.Texture.GenerateMipMaps = false;
+			Tetra.Texture.FlipY = false;
+			{
+				gridShader.DisplacementMap = Tetra.Texture.Load ("heightmap.png");
+				gridShader.SplatTexture = Tetra.Texture.Load ("splat.png");
+			}
+			Tetra.Texture.ResetToDefaultLoadingParams ();
+
+			circleShader = new CircleShader
+				("GGL.Shaders.GameLib.red",_circleTexSize, _circleTexSize);
+			circleShader.Color = new Vector4 (1, 1, 1, 1);
+			circleShader.Radius = 0.01f;
+			circleShader.Update ();
+
+
+			simpleTexturedShader = new GameLib.Shader ();
+			CacheRenderingShader = new Tetra.Shader();			
+
+		}
+
+		#region CTOR
+		public Terrain(System.Drawing.Size _cacheSize){
+			initShaders();
+			initGrid ();
+			CacheSize = _cacheSize;
+
+			skybox = new Tetra.SkyBox (
+				"#Ottd3D.images.skybox.right.bmp",
+				"#Ottd3D.images.skybox.left.bmp",
+				"#Ottd3D.images.skybox.top.bmp",
+				"#Ottd3D.images.skybox.top.bmp",
+				"#Ottd3D.images.skybox.front.bmp",
+				"#Ottd3D.images.skybox.back.bmp");
+		}
+		#endregion
+
+		public void Update(){
+			if (heightMapIsUpToDate)
+				return;
+
+			updateHeightMap ();			
+		}
+		public void UpdateMVP(Matrix4 projection, Matrix4 modelview, Vector3 vLook){
+
+			skybox.shader.MVP =  Matrix4.CreateRotationX(-MathHelper.PiOver2) *  Matrix4.LookAt(Vector3.Zero, -vLook, Vector3.UnitZ) * projection;
+
+			simpleTexturedShader.ProjectionMatrix = projection;
+			simpleTexturedShader.ModelViewMatrix = modelview;
+			simpleTexturedShader.ModelMatrix = Matrix4.Identity;
+
+			gridCacheIsUpToDate = false;
+		}
+		public void Render(){
+			drawGrid ();
+
+			drawHoverCase ();			
+		}
+		public void MouseMove(OpenTK.Input.MouseMoveEventArgs e){
+			int selPtr = (e.X * 4 + (CacheSize.Height - e.Y) * CacheSize.Width * 4);
+			if (selPtr + 3 < selectionMap.Length) {
+				//selection texture has on each pixel WorldPosition on ground level coded as 2 half floats
+				SelectionPos = new Vector3 (
+					(float)selectionMap [selPtr] + (float)selectionMap [selPtr + 1] / 255f, 
+					(float)selectionMap [selPtr + 2] + (float)selectionMap [selPtr + 3] / 255f, 0f);
+			}
+			updatePtrHm ();			
+		}
+
+		void updatePtrHm()
+		{
+			selCase = new Point<int> ((int)Math.Round (SelectionPos.X), (int)Math.Round (SelectionPos.Y));
+			ptrHM = (selCase.X + selCase.Y * _hmSize) * 4 ;
+			NotifyValueChanged ("PtrHM", ptrHM);
+		}
+		void updateSelMesh(){
+			selMesh = new vaoMesh ((float)Math.Floor(selPos.X)+0.5f, (float)Math.Floor(selPos.Y)+0.5f, selPos.Z, 1.0f, 1.0f);				
+		}
+
+		void initGrid()
 		{
 			const float z = 0.0f;
 			const int IdxPrimitiveRestart = int.MaxValue;
@@ -123,11 +248,15 @@ namespace Ottd3D
 				}
 			}
 
-			grid = new vaoMesh (positionVboData, texVboData, null);
-			grid.indices = indicesVboData;
+			gridMesh = new vaoMesh (positionVboData, texVboData, null);
+			gridMesh.indices = indicesVboData;
 
-			gridShader.DiffuseTexture = new TextureArray (groundTextures);
+			Tetra.Texture.DefaultWrapMode = TextureWrapMode.Repeat;
+			gridShader.DiffuseTexture = Tetra.Texture.Load (TextureTarget.Texture2DArray, groundTextures);
+			Tetra.Texture.ResetToDefaultLoadingParams ();
 
+			hmData = new byte[_hmSize*_hmSize*4];
+			getHeightMapData ();
 		}
 		void drawGrid()
 		{
@@ -136,8 +265,18 @@ namespace Ottd3D
 
 			renderGridCache ();
 		}
-		byte[] hmData;//height map
-		byte[] selectionMap;//has grid positions as colors
+		void drawHoverCase()
+		{
+			if (selMesh == null)
+				return;
+
+			simpleTexturedShader.Enable ();
+
+			GL.BindTexture (TextureTarget.Texture2D, circleShader.OutputTex);
+			selMesh.Render(PrimitiveType.TriangleStrip);
+			GL.BindTexture (TextureTarget.Texture2D, 0);
+		}
+
 
 		void getHeightMapData()
 		{			
@@ -171,23 +310,16 @@ namespace Ottd3D
 
 			GL.BindTexture (TextureTarget.Texture2D, 0);
 		}
-		int ptrHM = 0;
 
-		public int PtrHM{ get { return ptrHM; } }
-
-		void updatePtrHm()
-		{
-			ptrHM = ((int)Math.Round(SelectionPos.X) + (int)Math.Round(SelectionPos.Y) * _hmSize) * 4 ;
-			NotifyValueChange ("PtrHM", ptrHM);
-		}
 		#region Grid Cache
-		bool gridCacheIsUpToDate = false,
-		heightMapIsUpToDate = true,
-		splatTextureIsUpToDate = true;
+		bool	gridCacheIsUpToDate = false,
+				heightMapIsUpToDate = true,
+				splatTextureIsUpToDate = true;
 		QuadVAO cacheQuad;
-		Matrix4 cacheProjection;
-		int gridCacheTex, gridSelectionTex;
-		int fboGrid, depthRenderbuffer;
+		int gridCacheTex,
+			gridSelectionTex;
+		int fboGrid,
+			depthRenderbuffer;
 		DrawBuffersEnum[] dbe = new DrawBuffersEnum[]
 		{
 			DrawBuffersEnum.ColorAttachment0 ,
@@ -196,13 +328,14 @@ namespace Ottd3D
 
 
 		void createCache(){
-			selectionMap = new byte[ClientRectangle.Width*ClientRectangle.Height*4];
+			this.Dispose();
 
-			if (cacheQuad != null)
-				cacheQuad.Dispose ();
-			cacheQuad = new QuadVAO (0, 0, ClientRectangle.Width, ClientRectangle.Height, 0, 1, 1, -1);
-			cacheProjection = Matrix4.CreateOrthographicOffCenter 
-				(0, ClientRectangle.Width, 0, ClientRectangle.Height, 0, 1);
+			selectionMap = new byte[CacheSize.Width * CacheSize.Height*4];
+
+			cacheQuad = new QuadVAO (0, 0, CacheSize.Width, CacheSize.Height, 0, 1, 1, -1);
+			CacheRenderingShader.MVP = Matrix4.CreateOrthographicOffCenter 
+				(0, CacheSize.Width, 0, CacheSize.Height, 0, 1);
+
 			initGridFbo ();
 		}
 		void renderGridCache(){
@@ -211,9 +344,6 @@ namespace Ottd3D
 			GL.Disable (EnableCap.DepthTest);
 
 			CacheRenderingShader.Enable ();
-			CacheRenderingShader.ProjectionMatrix = cacheProjection;
-			CacheRenderingShader.ModelViewMatrix = Matrix4.Identity;
-			CacheRenderingShader.Color = new Vector4(1f,1f,1f,1f);
 
 			GL.ActiveTexture (TextureUnit.Texture0);
 			GL.BindTexture (TextureTarget.Texture2D, gridCacheTex);
@@ -227,18 +357,21 @@ namespace Ottd3D
 		#region FBO
 		void initGridFbo()
 		{
-			System.Drawing.Size cz = ClientRectangle.Size;
-
-			gridCacheTex = new Texture (cz.Width, cz.Height);
-			gridSelectionTex = new Texture (cz.Width, cz.Height);
-
-			Texture.SetTexFilterNeareast (gridSelectionTex);
-
+			
+				
+			Tetra.Texture.DefaultMagFilter = TextureMagFilter.Nearest;
+			Tetra.Texture.DefaultMinFilter = TextureMinFilter.Nearest;
+			Tetra.Texture.GenerateMipMaps = false;
+			{
+				gridCacheTex = new Tetra.Texture (CacheSize.Width, CacheSize.Height);
+				gridSelectionTex = new Tetra.Texture (CacheSize.Width, CacheSize.Height);
+			}
+			Tetra.Texture.ResetToDefaultLoadingParams ();
 
 			// Create Depth Renderbuffer
 			GL.GenRenderbuffers( 1, out depthRenderbuffer );
 			GL.BindRenderbuffer( RenderbufferTarget.Renderbuffer, depthRenderbuffer );
-			GL.RenderbufferStorage(RenderbufferTarget.Renderbuffer, (RenderbufferStorage)All.DepthComponent32, cz.Width, cz.Height);
+			GL.RenderbufferStorage(RenderbufferTarget.Renderbuffer, (RenderbufferStorage)All.DepthComponent32, CacheSize.Width, CacheSize.Height);
 
 			GL.GenFramebuffers(1, out fboGrid);
 
@@ -264,20 +397,37 @@ namespace Ottd3D
 
 			GL.Clear (ClearBufferMask.ColorBufferBit|ClearBufferMask.DepthBufferBit);
 
+			GL.DepthMask (false);
+			skybox.Render ();
+			GL.DepthMask (true);
+
 			gridShader.Enable ();
 
 			//4th component of selection texture is used as coordinate, not as alpha
 			GL.Disable (EnableCap.AlphaTest);
 			GL.Disable (EnableCap.Blend);
 
-			grid.Render(PrimitiveType.TriangleStrip, grid.indices);
+			gridMesh.Render(PrimitiveType.TriangleStrip, gridMesh.indices);
+
+			GL.DrawBuffers(1, new DrawBuffersEnum[]{DrawBuffersEnum.ColorAttachment0});
+
+
+
+
+			//			GL.Disable (EnableCap.AlphaTest);
+			//			GL.Enable (EnableCap.Blend);
+			//			GL.BlendFunc (BlendingFactorSrc.SrcAlpha, BlendingFactorDest.OneMinusSrcAlpha);
+			//
+			//			GL.DepthFunc (DepthFunction.Lequal);
+
+			//GL.Enable (EnableCap.DepthTest);
+			//GL.Enable (EnableCap.CullFace);
+
 
 			GL.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
 			GL.DrawBuffer(DrawBufferMode.Back);
 			getSelectionTextureData ();
 
-			GL.Enable (EnableCap.AlphaTest);
-			GL.Enable (EnableCap.Blend);
 
 			gridCacheIsUpToDate = true;
 		}
@@ -285,22 +435,23 @@ namespace Ottd3D
 
 		#endregion
 
+		#region IDisposable implementation
 
-		public string HeightMapPath = "heightmap.png";
-		public string SplatMapPath = "splat.png";
-
-		public string[] GroundTextures { get { return groundTextures; }}
-
-
-		public Terrain ()
+		public void Dispose ()
 		{
-			initGrid ();
-
-			createCache ();
-
-			hmData = new byte[_hmSize*_hmSize*4];
-			getHeightMapData ();			
+			if (cacheQuad != null)
+				cacheQuad.Dispose ();
+			if (GL.IsTexture (gridCacheTex))
+				GL.DeleteTexture (gridCacheTex);
+			if (GL.IsTexture (gridSelectionTex))
+				GL.DeleteTexture (gridSelectionTex);
+			if (GL.IsRenderbuffer (depthRenderbuffer))
+				GL.DeleteRenderbuffer (depthRenderbuffer);
+			if (GL.IsFramebuffer (fboGrid))
+				GL.DeleteFramebuffer (fboGrid);			
 		}
+
+		#endregion
 	}
 }
 

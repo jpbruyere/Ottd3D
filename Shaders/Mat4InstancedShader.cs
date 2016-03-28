@@ -124,8 +124,8 @@ namespace Ottd3D
 			{
 
 				vec4 diffTex = texture( tex, texCoord) * Color;
-//				if (diffTex.a < 0.1)
-//					discard;
+				if (diffTex.a < 0.2)
+					discard;
 				vec3 vLight;
 				vec3 vEye = normalize(-vEyeSpacePos.xyz);
 
