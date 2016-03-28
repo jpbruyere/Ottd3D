@@ -43,6 +43,7 @@ namespace Ottd3D
 		}
 
 		List<Vector3> tp = new List<Vector3> ();
+		List<int> restartIdx = new List<int>();
 
 		void buildSegment(TrackSegment tPrevious, TrackSegment tNext)
 		{
@@ -54,8 +55,10 @@ namespace Ottd3D
 				if (tNext == null) {
 					if (tPrevious == CurrentSegment)
 						secondCtrPoint = tPrevious.EndPos - vEnd * controlPointDist;
-					else
-						secondCtrPoint = tPrevious.EndPos - tPrevious.vStart * controlPointDist;
+					else {
+						restartIdx.Add (tp.Count);
+						return;
+					}
 				}else
 					secondCtrPoint = tPrevious.EndPos - tNext.vStart * controlPointDist;
 
@@ -90,14 +93,21 @@ namespace Ottd3D
 				trackMesh.Dispose ();
 			trackMesh = null;
 
+			tp.Clear ();
+			restartIdx.Clear ();
+
 			foreach (TrackSegment tStart in TrackStarts)
 				buildSegment (null, tStart);
 
 			if (tp.Count == 0)
 				return;
 
-			trackMesh = new vaoMesh (tp.ToArray (), null, null);
-			tp.Clear ();
+				List<int> indices = Enumerable.Range (0, tp.Count).ToList();
+
+			for (int i = 0; i < restartIdx.Count; i++)
+				indices.Insert (restartIdx [i] + i, int.MaxValue);			
+
+			trackMesh = new vaoMesh (tp.ToArray (), null, indices.ToArray());
 		}
 
 		public void Render()

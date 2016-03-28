@@ -29,12 +29,16 @@
     <WarningLevel>4</WarningLevel>
     <ConsolePause>false</ConsolePause>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <IntermediateOutputPath>$(SolutionDir)\build\obj\$(Configuration)</IntermediateOutputPath>
+    <OutputPath>$(SolutionDir)\build\$(Configuration)</OutputPath>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>none</DebugType>
     <Optimize>true</Optimize>
     <WarningLevel>0</WarningLevel>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <IntermediateOutputPath>$(SolutionDir)\build\obj\$(Configuration)</IntermediateOutputPath>
+    <OutputPath>$(SolutionDir)\build\$(Configuration)</OutputPath>
   </PropertyGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <Import Project="packages\gtk-sharp.Linux.3.14.3.14.7\build\net40\gtk-sharp.Linux.3.14.targets" Condition="Exists('packages\gtk-sharp.Linux.3.14.3.14.7\build\net40\gtk-sharp.Linux.3.14.targets')" />
@@ -75,9 +79,7 @@
   <ItemGroup>
     <Compile Include="Shaders\CircleShader.cs" />
     <Compile Include="Shaders\BrushShader.cs" />
-    <Compile Include="Ottd3DWindow.cs" />
     <Compile Include="Shaders\SingleLightShader.cs" />
-    <Compile Include="Shaders\Mat4InstancedShader.cs" />
     <Compile Include="Shaders\VertexDispShader.cs" />
     <Compile Include="Track.cs" />
     <Compile Include="TrackSegment.cs" />
@@ -97,6 +99,9 @@
       <Link>VertexArrayObject.cs</Link>
     </Compile>
     <Compile Include="Ottd3DMapEditor.cs" />
+    <Compile Include="Ottd3DWindow.cs" />
+    <Compile Include="Terrain.cs" />
+    <Compile Include="Shaders\Mat4InstancedShader.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="ui\" />
@@ -122,7 +127,6 @@
     <EmbeddedResource Include="images\ground_crackedv_d.jpg" />
     <EmbeddedResource Include="images\ground_cracks2v_d.jpg" />
     <EmbeddedResource Include="images\ground_cracks2y_d.jpg" />
-    <EmbeddedResource Include="ui\fps.goml" />
     <EmbeddedResource Include="ui\menu.goml" />
     <EmbeddedResource Include="images\grass.jpg" />
     <EmbeddedResource Include="Shaders\circle.frag" />
@@ -134,22 +138,14 @@
     <EmbeddedResource Include="ui\heightEditionMenu.goml" />
     <EmbeddedResource Include="ui\SplatTexPopTemplate.goml" />
     <EmbeddedResource Include="ui\SpattingMenu.goml" />
-    <EmbeddedResource Include="images\trees\obj__pinet1.obj" />
-    <EmbeddedResource Include="images\trees\pinet1.png" />
     <EmbeddedResource Include="images\skybox\back.bmp" />
     <EmbeddedResource Include="images\skybox\bottom.bmp" />
     <EmbeddedResource Include="images\skybox\front.bmp" />
     <EmbeddedResource Include="images\skybox\left.bmp" />
     <EmbeddedResource Include="images\skybox\right.bmp" />
     <EmbeddedResource Include="images\skybox\top.bmp" />
-    <EmbeddedResource Include="images\trees\obj__pinet2.obj" />
-    <EmbeddedResource Include="images\trees\pinet2.png" />
-    <EmbeddedResource Include="images\trees\tree1.png" />
-    <EmbeddedResource Include="images\trees\obj__tree1.obj" />
-    <EmbeddedResource Include="images\trees\obj__tree2.obj" />
-    <EmbeddedResource Include="images\trees\tree2.png" />
-    <EmbeddedResource Include="images\trees\obj__tree3.obj" />
-    <EmbeddedResource Include="images\trees\tree3.png" />
+    <EmbeddedResource Include="ui\fps.crow" />
+    <EmbeddedResource Include="ui\tmpWindow.crow" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="lib\GGL\GGL.csproj">
@@ -162,7 +158,6 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <None Include="Terrain.cs" />
     <None Include="..\..\..\data\obj\heolienne.mtl">
       <Link>Meshes\heolienne.mtl</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
@@ -175,8 +170,6 @@
       <Link>Meshes\heolienne.obj</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="images\trees\obj__pinet1.mtl" />
-    <None Include="images\trees\pinet1.tga" />
     <None Include="..\..\..\data\obj\heolienne14.mtl">
       <Link>Meshes\heolienne14.mtl</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
@@ -188,9 +181,47 @@
     <None Include="Meshes\cubetest.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="images\trees\3ds__tree1.3ds" />
-    <None Include="images\trees\3ds__tree2.3ds" />
     <None Include="OpenTK.dll.config" />
     <None Include="packages.config" />
+    <None Include="images\trees\obj__pinet1.obj">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="images\trees\pinet1.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="images\trees\obj__pinet2.obj">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="images\trees\pinet2.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="images\trees\tree1.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="images\trees\obj__tree1.obj">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="images\trees\obj__tree2.obj">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="images\trees\tree2.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="images\trees\obj__tree3.obj">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="images\trees\tree3.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="images\trees\pine_0.1.obj">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="images\trees\simple.obj">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\..\..\data\downloads\3d\trees\birch_tree_small_20131230_2041956203.png">
+      <Link>images\trees\birch_tree_small_20131230_2041956203.png</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 </Project>

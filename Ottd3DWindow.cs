@@ -20,7 +20,7 @@ using System.Security.Permissions;
 
 namespace Ottd3D
 {
-	class Ottd3DWindow : OpenTKGameWindow, IValueChange
+	class Ottd3DWindow : OpenTKGameWindow
 	{
 		public enum GameState
 		{
@@ -53,7 +53,7 @@ namespace Ottd3D
 				tmp.fogColor = new Vector4(0.7f,0.7f,0.7f,1.0f);
 				tmp.fStart = 100.0f; // This is only for linear fog
 				tmp.fEnd = 300.0f; // This is only for linear fog
-				tmp.fDensity = 0.004f; // For exp and exp2 equation   
+				tmp.fDensity = 0.006f; // For exp and exp2 equation   
 				tmp.iEquation = 1; // 0 = linear, 1 = exp, 2 = exp2
 				return tmp;
 			}
@@ -68,13 +68,7 @@ namespace Ottd3D
 		public GameState CurrentState = GameState.RailTrackEdition;
 		public Track RailTrack = new Track();
 
-		#region IValueChange implementation
-		public event EventHandler<ValueChangeEventArgs> ValueChanged;
-		public void NotifyValueChange(string propName, object newValue)
-		{
-			ValueChanged.Raise(this, new ValueChangeEventArgs (propName, newValue));
-		}
-		#endregion
+
 
 
 		#region  scene matrix and vectors
@@ -125,7 +119,7 @@ namespace Ottd3D
 				selPos = value;
 				selPos.Z = hmData[((int)selPos.Y * _hmSize + (int)selPos.X) * 4 + 1] / 256f * heightScale;
 				updateSelMesh ();
-				NotifyValueChange ("SelectionPos", selPos);
+				NotifyValueChanged ("SelectionPos", selPos);
 			}
 		}
 		public int PtrHM{ get { return ptrHM; } }
@@ -133,7 +127,7 @@ namespace Ottd3D
 		{
 			selCase = new Point<int> ((int)Math.Round (SelectionPos.X), (int)Math.Round (SelectionPos.Y));
 			ptrHM = (selCase.X + selCase.Y * _hmSize) * 4 ;
-			NotifyValueChange ("PtrHM", ptrHM);
+			NotifyValueChanged ("PtrHM", ptrHM);
 		}
 		public Vector2 MousePos {
 			get { return new Vector2 (Mouse.X, Mouse.Y); }
@@ -142,16 +136,113 @@ namespace Ottd3D
 			selMesh = new vaoMesh ((float)Math.Floor(selPos.X)+0.5f, (float)Math.Floor(selPos.Y)+0.5f, selPos.Z, 1.0f, 1.0f);				
 		}
 
+		void initGL(){
+			GL.Enable(EnableCap.DepthTest);
+			GL.DepthFunc(DepthFunction.Less);
+			//			GL.Enable(EnableCap.CullFace);
+			GL.PrimitiveRestartIndex (int.MaxValue);
+			GL.Enable (EnableCap.PrimitiveRestart);
+
+			GL.Enable (EnableCap.Blend);
+			GL.BlendFunc(BlendingFactorSrc.SrcAlpha, BlendingFactorDest.OneMinusSrcAlpha);
+		}
+		void initScene(){
+			#region test IndexedVAO
+			int tcDiffTex = new Texture("/mnt/data/blender/ottd3d/testcube-diff.jpg");
+			int tcNormTex = new Texture("/mnt/data/blender/ottd3d/testcube-norm.jpg");
+
+			int houseDiffTex = new Texture("/mnt/data/Images/texture/structures/house-diff.png");
+			int houseNormTex = new Texture("/mnt/data/Images/texture/structures/house-norm.png");
+
+			const int nbHeol = 5, heolSpacing = 4;
+			Tetra.VAOItem<Tetra.VAOInstancedData> vaoi = null;
+			landItemsVao = new Tetra.IndexedVAO<Tetra.VAOInstancedData> ();
+
+			//TEST HOUSE
+			vaoi = landItemsVao.Add (Tetra.OBJMeshLoader.Load ("/mnt/data/blender/ottd3d/house0.obj"));
+			vaoi.DiffuseTexture = houseDiffTex;
+			vaoi.NormalMapTexture = houseNormTex;
+			vaoi.Datas = new Tetra.VAOInstancedData[nbHeol];
+			for (int i = 0; i < nbHeol; i++) {
+				Vector2 pos = new Vector2 ((float)rnd.Next(0,_gridSize), (float)rnd.Next(0,_gridSize));
+				vaoi.Datas[i].modelMats = Matrix4.CreateTranslation (pos.X-(pos.X % 4f) + 0.5f, pos.Y-(pos.Y % 4f) + 0.5f, 0f);
+			}
+			vaoi.UpdateInstancesData ();
+
+			//HEOLIENNES
+			vaoi = landItemsVao.Add (Tetra.OBJMeshLoader.Load ("/mnt/data/blender/ottd3d/heolienne.obj"));
+			vaoi.DiffuseTexture = new Texture("/mnt/data/blender/ottd3d/heolienne.png");
+			vaoi.Datas = new Tetra.VAOInstancedData[nbHeol];
+			for (int i = 0; i < nbHeol; i++) {
+				Vector2 pos = new Vector2 ((float)rnd.Next(0,_gridSize), (float)rnd.Next(0,_gridSize));
+				vaoi.Datas[i].modelMats = Matrix4.CreateTranslation (pos.X-(pos.X % 4f) + 0.5f, pos.Y-(pos.Y % 4f) + 0.5f, 0f);
+			}
+			vaoi.UpdateInstancesData();
+
+			landItemsVao.ComputeTangents();
+			landItemsVao.BuildBuffers ();
+			#endregion
+
+			const float treezone = 32;
+			const int treeCount = 50;
+			transparentItemsVao = new Tetra.IndexedVAO<Tetra.VAOInstancedData> ();
+
+			//====TREE1====
+			//			vaoi = transparentItemsVao.Add (Tetra.OBJMeshLoader.Load ("#Ottd3D.images.trees.obj__pinet1.obj"));
+			//			vaoi.DiffuseTexture = Tetra.Texture.Load("#Ottd3D.images.trees.pinet1.png");
+			//			vaoi.modelMats = new Matrix4[treeCount];
+			//			for (int i = 0; i < treeCount; i++) {				
+			//				Vector2 pos = new Vector2 ((float)rnd.NextDouble() * treezone, (float)rnd.NextDouble() * treezone);
+			//				float scale = (float)rnd.NextDouble () * 0.002f + 0.004f;
+			//				vaoi.modelMats[i] =treeRot * Matrix4.CreateScale (scale)* Matrix4.CreateTranslation(pos.X, pos.Y, 0f);
+			//			}
+			//			vaoi.UpdateInstancesData ();
+
+			//====TREE2====
+			//			addRandomTrees (transparentItemsVao, treeCount,
+			//				"#Ottd3D.images.trees.simple.obj",
+			//				"#Ottd3D.images.trees.birch_tree_small_20131230_2041956203.png",400f);
+
+			//			addRandomTrees (transparentItemsVao, treeCount,
+			//				"#Ottd3D.images.trees.obj__pinet1.obj",
+			//				"#Ottd3D.images.trees.pinet1.png",5f);
+			addRandomTrees (transparentItemsVao, treeCount,
+				"images/trees/obj__pinet2.obj",
+				"images/trees/pinet2.png",2f);
+			//			addRandomTrees (transparentItemsVao, treeCount,
+			//				"#Ottd3D.images.trees.obj__tree1.obj",
+			//				"#Ottd3D.images.trees.tree1.png",5f);
+			//			addRandomTrees (transparentItemsVao, treeCount,
+			//				"#Ottd3D.images.trees.obj__tree2.obj",
+			//				"#Ottd3D.images.trees.tree2.png", 5f);
+			//			addRandomTrees (transparentItemsVao, treeCount,
+			//				"#Ottd3D.images.trees.obj__tree3.obj",
+			//				"#Ottd3D.images.trees.tree3.png", 5f);
+
+			transparentItemsVao.ComputeTangents ();
+			transparentItemsVao.BuildBuffers ();
+
+			skybox = new Tetra.SkyBox (
+				"#Ottd3D.images.skybox.right.bmp",
+				"#Ottd3D.images.skybox.left.bmp",
+				"#Ottd3D.images.skybox.top.bmp",
+				"#Ottd3D.images.skybox.top.bmp",
+				"#Ottd3D.images.skybox.front.bmp",
+				"#Ottd3D.images.skybox.back.bmp");
+		}
+
 		#region Shaders
 		public static CircleShader circleShader;
 		public static Ottd3D.VertexDispShader gridShader;
 		public static GameLib.Shader simpleTexturedShader;
 		public static Tetra.Shader CacheRenderingShader;
 
-		public static Tetra.Mat4InstancedShader objShader;
+		public static Mat4InstancedShader objShader;
 
 		void initShaders()
 		{
+			objShader = new Mat4InstancedShader ();
+
 			circleShader = new CircleShader ("GGL.Shaders.GameLib.red",_circleTexSize, _circleTexSize);
 			circleShader.Color = new Vector4 (1, 1, 1, 1);
 			circleShader.Radius = 0.01f;
@@ -176,16 +267,14 @@ namespace Ottd3D
 			}
 			Tetra.Texture.ResetToDefaultLoadingParams ();
 
-			objShader = new Tetra.Mat4InstancedShader ();
 			//objShader.DiffuseTexture = heolienneTex;
 
-			shaderSharedData.Color = new Vector4 (1, 1, 1, 1);
 			uboShaderSharedData = GL.GenBuffer ();
 			GL.BindBuffer (BufferTarget.UniformBuffer, uboShaderSharedData);
 			GL.BufferData(BufferTarget.UniformBuffer,Marshal.SizeOf(shaderSharedData),
 					ref shaderSharedData, BufferUsageHint.DynamicCopy);
 			GL.BindBuffer (BufferTarget.UniformBuffer, 0);
-			GL.BindBufferBase (BufferTarget.UniformBuffer, 0, uboShaderSharedData);
+			GL.BindBufferBase (BufferRangeTarget.UniformBuffer, 0, uboShaderSharedData);
 
 			fogData = UBOFogData.CreateUBOFogData();
 			uboFogData = GL.GenBuffer ();
@@ -193,9 +282,7 @@ namespace Ottd3D
 			GL.BufferData(BufferTarget.UniformBuffer,Marshal.SizeOf(fogData),
 				ref fogData, BufferUsageHint.StaticCopy);
 			GL.BindBuffer (BufferTarget.UniformBuffer, 0);
-			GL.BindBufferBase (BufferTarget.UniformBuffer, 10, uboFogData);
-
-
+			GL.BindBufferBase (BufferRangeTarget.UniformBuffer, 1, uboFogData);
 		}
 
 		void updateShadersMatrices(){
@@ -210,6 +297,7 @@ namespace Ottd3D
 			shaderSharedData.normal = modelview.Inverted();
 			shaderSharedData.normal.Transpose ();
 			shaderSharedData.LightPosition = Vector4.Transform(vLight, modelview);
+			shaderSharedData.Color = new Vector4 (1, 1, 1, 1);
 
 			GL.BindBuffer (BufferTarget.UniformBuffer, uboShaderSharedData);
 			GL.BufferData(BufferTarget.UniformBuffer,Marshal.SizeOf(shaderSharedData),
@@ -282,6 +370,9 @@ namespace Ottd3D
 			Tetra.Texture.DefaultWrapMode = TextureWrapMode.Repeat;
 			gridShader.DiffuseTexture = Tetra.Texture.Load (TextureTarget.Texture2DArray, groundTextures);
 			Tetra.Texture.ResetToDefaultLoadingParams ();
+
+			hmData = new byte[_hmSize*_hmSize*4];
+			getHeightMapData ();
 		}
 		void drawGrid()
 		{
@@ -442,17 +533,49 @@ namespace Ottd3D
 			landItemsVao.Render (PrimitiveType.Triangles);
 			landItemsVao.Unbind ();
 
-			//GL.DepthMask (false);
-			GL.Enable (EnableCap.AlphaTest);
-			GL.Enable (EnableCap.Blend);
-			GL.BlendFunc(BlendingFactorSrc.SrcAlpha, BlendingFactorDest.OneMinusSrcAlpha);
+
+//			GL.Enable (EnableCap.Blend);
+//			GL.Enable (EnableCap.AlphaTest);
 
 			transparentItemsVao.Bind ();
+
+			//GL.Disable (EnableCap.Blend);
+			//GL.BlendFunc(BlendingFactorSrc.One, BlendingFactorDest.Zero );
+//			GL.BlendFunc (BlendingFactorSrc.SrcAlpha, BlendingFactorDest.OneMinusSrcAlpha);
+//			GL.DepthMask (false);
+
+
+			GL.Enable (EnableCap.Blend);
+
+//			GL.AlphaFunc (AlphaFunction.Greater, 0.0f);
+//			GL.DepthMask (false);
+//			GL.Disable (EnableCap.DepthTest);
+
 			transparentItemsVao.Render (PrimitiveType.Triangles);
+
+
+//			GL.AlphaFunc (AlphaFunction.Equal, 1.0f);
+//			GL.DepthMask (true);
+//			GL.Enable (EnableCap.DepthTest);
+//			transparentItemsVao.Render (PrimitiveType.Triangles);
+
+			//GL.Disable (EnableCap.Blend);
+			//GL.Disable (EnableCap.AlphaTest);
+			//
+//			GL.BlendFunc (BlendingFactorSrc.SrcAlpha, BlendingFactorDest.OneMinusSrcAlpha);
+
+
 			transparentItemsVao.Unbind ();
 
+//			GL.Disable (EnableCap.AlphaTest);
+//			GL.Enable (EnableCap.Blend);
+//			GL.BlendFunc (BlendingFactorSrc.SrcAlpha, BlendingFactorDest.OneMinusSrcAlpha);
+//
+//			GL.DepthFunc (DepthFunction.Lequal);
 
-			//GL.DepthMask (true);
+			//GL.Enable (EnableCap.DepthTest);
+			//GL.Enable (EnableCap.CullFace);
+
 
 			GL.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
 			GL.DrawBuffer(DrawBufferMode.Back);
@@ -497,7 +620,7 @@ namespace Ottd3D
 			this.MouseMove += Mouse_Move;
 			this.KeyDown += Ottd3DWindow_KeyDown;
 
-			CrowInterface.LoadInterface("#Ottd3D.ui.fps.goml").DataSource = this;
+			CrowInterface.LoadInterface("#Ottd3D.ui.fps.crow").DataSource = this;
 			//LoadInterface("#Ottd3D.ui.menu.goml").DataSource = this;
 		}
 			
@@ -531,7 +654,7 @@ namespace Ottd3D
 		{
 			if (e.XDelta != 0 || e.YDelta != 0)
 			{
-				NotifyValueChange("MousePos", MousePos);
+				NotifyValueChanged("MousePos", MousePos);
 				//selection texture has clientRect size and 4 bytes per pixel, so
 				int selPtr = (e.X * 4 + (ClientRectangle.Height - e.Y) * ClientRectangle.Width * 4);
 				if (selPtr + 3 < selectionMap.Length) {
@@ -611,10 +734,10 @@ namespace Ottd3D
 			switch (e.Key) {
 			case OpenTK.Input.Key.Escape:
 				if (CurrentState == GameState.RailTrackEdition) {
-					if (RailTrack.CurrentSegment != null) {
-						RailTrack.vEnd = RailTrack.CurrentSegment.vStart;
-						RailTrack.TrackStarts.Remove (RailTrack.CurrentSegment);
+					if (RailTrack.CurrentSegment != null) {						
 						RailTrack.CurrentSegment = null;
+						//RailTrack.TrackStarts.Remove (RailTrack.CurrentSegment);
+
 						RailTrack.UpdateTrackMesh ();
 					}
 				}
@@ -622,6 +745,7 @@ namespace Ottd3D
 			}
 		}
 		#endregion
+
 		void onGameStateChange (object sender, ValueChangeEventArgs e)
 		{
 			if (e.MemberName != "IsChecked" || (bool)e.NewValue != true)
@@ -632,164 +756,8 @@ namespace Ottd3D
 		}
 		#endregion
 
-//		void matRotThread()
-//		{
-//			while (true) {
-//				if (updateMatrices) {
-//					Thread.Sleep (1);
-//					continue;
-//				}
-//				for (int i = 0; i < instances; i++) {
-//					for (int j = 0; j < instances; j++) {
-//						heolienne.modelMats [i*instances+j] *= Matrix4.CreateRotationZ(0.01f);
-//					}
-//					//modMats [i] = Matrix4.Identity;
-//				}				
-//				updateMatrices = true;
-//			}
-//		}
 		Random rnd = new Random ();
-		protected override void OnLoad (EventArgs e)
-		{
 
-			base.OnLoad (e);
-
-			initInterface ();
-
-
-
-			#region test IndexedVAO
-			int tcDiffTex = new Texture("/mnt/data/blender/ottd3d/testcube-diff.jpg");
-			int tcNormTex = new Texture("/mnt/data/blender/ottd3d/testcube-norm.jpg");
-
-			int houseDiffTex = new Texture("/mnt/data/Images/texture/structures/house-diff.png");
-			int houseNormTex = new Texture("/mnt/data/Images/texture/structures/house-norm.png");
-
-			const int nbHeol = 5, heolSpacing = 4;
-			Tetra.VAOItem<Tetra.VAOInstancedData> vaoi = null;
-			landItemsVao = new Tetra.IndexedVAO<Tetra.VAOInstancedData> ();
-				
-			//TEST HOUSE
-			vaoi = landItemsVao.Add (Tetra.OBJMeshLoader.Load ("/mnt/data/blender/ottd3d/house0.obj"));
-			vaoi.DiffuseTexture = houseDiffTex;
-			vaoi.NormalMapTexture = houseNormTex;
-			vaoi.Datas = new Tetra.VAOInstancedData[nbHeol];
-			for (int i = 0; i < nbHeol; i++) {
-				Vector2 pos = new Vector2 ((float)rnd.Next(0,_gridSize), (float)rnd.Next(0,_gridSize));
-				vaoi.Datas[i].modelMats = Matrix4.CreateTranslation (pos.X-(pos.X % 4f) + 0.5f, pos.Y-(pos.Y % 4f) + 0.5f, 0f);
-			}
-			vaoi.UpdateInstancesData ();
-
-			//HEOLIENNES
-			vaoi = landItemsVao.Add (Tetra.OBJMeshLoader.Load ("/mnt/data/blender/ottd3d/heolienne.obj"));
-			vaoi.DiffuseTexture = new Texture("/mnt/data/blender/ottd3d/heolienne.png");
-			vaoi.Datas = new Tetra.VAOInstancedData[nbHeol];
-			for (int i = 0; i < nbHeol; i++) {
-				Vector2 pos = new Vector2 ((float)rnd.Next(0,_gridSize), (float)rnd.Next(0,_gridSize));
-				vaoi.Datas[i].modelMats = Matrix4.CreateTranslation (pos.X-(pos.X % 4f) + 0.5f, pos.Y-(pos.Y % 4f) + 0.5f, 0f);
-			}
-			vaoi.UpdateInstancesData();
-
-			landItemsVao.ComputeTangents();
-			landItemsVao.BuildBuffers ();
-			#endregion
-
-			const float treezone = 256;
-			const int treeCount = 50;
-			transparentItemsVao = new Tetra.IndexedVAO<Tetra.VAOInstancedData> ();
-
-			//====TREE1====
-//			vaoi = transparentItemsVao.Add (Tetra.OBJMeshLoader.Load ("#Ottd3D.images.trees.obj__pinet1.obj"));
-//			vaoi.DiffuseTexture = Tetra.Texture.Load("#Ottd3D.images.trees.pinet1.png");
-//			vaoi.modelMats = new Matrix4[treeCount];
-//			for (int i = 0; i < treeCount; i++) {				
-//				Vector2 pos = new Vector2 ((float)rnd.NextDouble() * treezone, (float)rnd.NextDouble() * treezone);
-//				float scale = (float)rnd.NextDouble () * 0.002f + 0.004f;
-//				vaoi.modelMats[i] =treeRot * Matrix4.CreateScale (scale)* Matrix4.CreateTranslation(pos.X, pos.Y, 0f);
-//			}
-//			vaoi.UpdateInstancesData ();
-
-			//====TREE2====
-			addRandomTrees (transparentItemsVao, treeCount,
-				"#Ottd3D.images.trees.obj__pinet1.obj",
-				"#Ottd3D.images.trees.pinet1.png",5f);
-			addRandomTrees (transparentItemsVao, treeCount,
-				"#Ottd3D.images.trees.obj__pinet2.obj",
-				"#Ottd3D.images.trees.pinet2.png",5f);
-			addRandomTrees (transparentItemsVao, treeCount,
-				"#Ottd3D.images.trees.obj__tree1.obj",
-				"#Ottd3D.images.trees.tree1.png",5f);
-			addRandomTrees (transparentItemsVao, treeCount,
-				"#Ottd3D.images.trees.obj__tree2.obj",
-				"#Ottd3D.images.trees.tree2.png", 5f);
-			addRandomTrees (transparentItemsVao, treeCount,
-				"#Ottd3D.images.trees.obj__tree3.obj",
-				"#Ottd3D.images.trees.tree3.png", 5f);
-
-			transparentItemsVao.ComputeTangents ();
-			transparentItemsVao.BuildBuffers ();
-
-			initShaders ();
-
-			GL.ClearColor(0.0f, 0.0f, 0.2f, 1.0f);
-			GL.Enable(EnableCap.DepthTest);
-			GL.DepthFunc(DepthFunction.Less);
-			//			GL.Enable(EnableCap.CullFace);
-			GL.PrimitiveRestartIndex (int.MaxValue);
-			GL.Enable (EnableCap.PrimitiveRestart);
-
-			GL.Enable (EnableCap.Blend);
-			GL.BlendFunc(BlendingFactorSrc.SrcAlpha, BlendingFactorDest.OneMinusSrcAlpha);
-
-			initGrid ();
-
-			createCache ();
-
-			hmData = new byte[_hmSize*_hmSize*4];
-			getHeightMapData ();
-
-//			Thread t = new Thread (matRotThread);
-//			t.IsBackground = true;
-//			t.Start ();
-
-			#region skybox tests
-//			string[] sky = new string[] 
-//				{
-//					@"/mnt/data/Images/texture/skybox/sky1/oright7.jpg",
-//					@"/mnt/data/Images/texture/skybox/sky1/oleft7.jpg",
-//					@"/mnt/data/Images/texture/skybox/sky1/otop7.jpg",
-//					@"/mnt/data/Images/texture/skybox/sky1/otop7.jpg",
-//					@"/mnt/data/Images/texture/skybox/sky1/ofront7.jpg",
-//					@"/mnt/data/Images/texture/skybox/sky1/oback7.jpg"
-//
-//					@"/mnt/data/Images/texture/skybox/sky4/px.jpg",
-//					@"/mnt/data/Images/texture/skybox/sky4/nx.jpg",
-//					@"/mnt/data/Images/texture/skybox/sky4/ny.jpg",
-//					@"/mnt/data/Images/texture/skybox/sky4/py.jpg",
-//					@"/mnt/data/Images/texture/skybox/sky4/pz.jpg",
-//					@"/mnt/data/Images/texture/skybox/sky4/nz.jpg"
-//
-//					@"/mnt/data/Images/texture/skybox/frozendusk/right.jpg",
-//					@"/mnt/data/Images/texture/skybox/frozendusk/left.jpg",
-//					@"/mnt/data/Images/texture/skybox/frozendusk/top.jpg",
-//					@"/mnt/data/Images/texture/skybox/frozendusk/top.jpg",
-//					@"/mnt/data/Images/texture/skybox/frozendusk/front.jpg",
-//					@"/mnt/data/Images/texture/skybox/frozendusk/back.jpg"
-//				};
-			#endregion
-
-			string[] sky = new string[] 
-			{
-				"#Ottd3D.images.skybox.right.bmp",
-				"#Ottd3D.images.skybox.left.bmp",
-				"#Ottd3D.images.skybox.top.bmp",
-				"#Ottd3D.images.skybox.top.bmp",
-				"#Ottd3D.images.skybox.front.bmp",
-				"#Ottd3D.images.skybox.back.bmp"
-			};
-
-			skybox = new Tetra.SkyBox (sky[0],sky[1],sky[2],sky[3],sky[4],sky[5]);
-		}
 			
 		void addRandomTrees(Tetra.IndexedVAO<Tetra.VAOInstancedData> vao, int count, string objPath, string diffTexPath, float _scale=1f)
 		{			
@@ -825,7 +793,7 @@ namespace Ottd3D
 					depthSort (item.Datas);	
 				}
 
-			} catch (Exception ex) {
+			} catch {
 				return;
 			}
 			depthSortingDone = true;
@@ -839,7 +807,24 @@ namespace Ottd3D
 						CompareTo	((new Vector2(x.modelMats.Row3.X, x.modelMats.Row3.Y) - vEye.Xy).LengthFast); });
 			
 		}
-		private int frameCpt = 0;
+		#region OTK overrides
+		protected override void OnLoad (EventArgs e)
+		{
+
+			base.OnLoad (e);
+
+			initGL ();
+
+			initShaders ();
+
+			initInterface ();
+
+			initGrid ();
+
+			createCache ();
+
+			initScene ();
+		}
 		protected override void OnUpdateFrame (FrameEventArgs e)
 		{
 			base.OnUpdateFrame (e);
@@ -892,7 +877,8 @@ namespace Ottd3D
 			UpdateViewMatrix();
 		}
 		public override void GLClear ()
-		{			
+		{
+			GL.ClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 			GL.Clear (ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
 		}
 		public override void OnRender (FrameEventArgs e)
@@ -903,6 +889,7 @@ namespace Ottd3D
 
 			RailTrack.Render ();
 		}
+		#endregion
 			
 
 		#region Main and CTOR
@@ -916,7 +903,7 @@ namespace Ottd3D
 			}
 		}
 		public Ottd3DWindow ()
-			: base(1024, 800,"test")
+			: base(1024, 800, 32, 24, 1, 4, "test")
 		{
 			VSync = VSyncMode.Off;
 		}

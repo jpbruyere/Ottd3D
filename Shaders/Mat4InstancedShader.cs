@@ -4,11 +4,13 @@ using System.Diagnostics;
 using OpenTK;
 using GameLib;
 
-namespace Tetra
+namespace Ottd3D
 {
-	public class Mat4InstancedShader : Shader
+	public class Mat4InstancedShader : Tetra.Shader
 	{
-		public Mat4InstancedShader ()
+		public Mat4InstancedShader () : base(){}
+
+		public override void Init ()
 		{
 			vertSource = @"
 			#version 330
@@ -20,7 +22,7 @@ namespace Tetra
 			layout (location = 3) in vec3 in_tangent;
 			layout (location = 4) in mat4 in_model;
 
-			layout (std140, index = 0) uniform block_data{
+			layout (std140) uniform block_data{
 				mat4 Projection;
 				mat4 ModelView;
 				mat4 Normal;
@@ -54,7 +56,7 @@ namespace Tetra
 			precision highp float;
 
 
-			layout (std140, index = 10) uniform fogData
+			layout (std140) uniform fogData
 			{ 
 				vec4 fogColor;
 				float fStart; // This is only for linear fog
@@ -67,7 +69,7 @@ namespace Tetra
 			uniform sampler2D tex;
 			uniform sampler2D normal;
 
-			layout (std140, index = 0) uniform block_data{
+			layout (std140) uniform block_data{
 				mat4 Projection;
 				mat4 ModelView;
 				mat4 Normal;
@@ -112,35 +114,49 @@ namespace Tetra
 			    return NewNormal;
 			}
 
+			const vec3 diffuse = vec3(0.7, 0.7, 0.7);
+			const vec3 ambient = vec3(0.01, 0.01, 0.01);
+			const vec3 specular = vec3(0.0,0.0,0.0);
+			const float shininess = 1.0;
+			const float screenGamma = 1.0;
+
 			void main(void)
 			{
-				//vec3 nmap = normalize(texture2D( normal, texCoord ).rgb*2.0 - 1.0);
+
 				vec4 diffTex = texture( tex, texCoord) * Color;
-				if (diffTex.a == 0.0)
-					discard;
+//				if (diffTex.a < 0.1)
+//					discard;
+				vec3 vLight;
+				vec3 vEye = normalize(-vEyeSpacePos.xyz);
 
-				vec3 N = CalcBumpedNormal();
-
-				vec3 l;
 				if (lightPos.w == 0.0)
-					l = normalize(-lightPos.xyz);
+					vLight = normalize(-lightPos.xyz);
 				else
-					l = normalize(lightPos.xyz - vEyeSpacePos.xyz);				
+					vLight = normalize(lightPos.xyz - vEyeSpacePos.xyz);
 
-				float Idiff = clamp(max(dot(N,l), 0.0),0.5,1.0);
+				//blinn phong
+				vec3 halfDir = normalize(vLight + vEye);
+				float specAngle = max(dot(halfDir, n), 0.0);
+				vec3 Ispec = specular * pow(specAngle, shininess);
+				vec3 Idiff = diffuse * max(dot(n,vLight), 0.0);
 
-			   	float fFogCoord = abs(vEyeSpacePos.z/vEyeSpacePos.w);
+				float fFogCoord = abs(vEyeSpacePos.z/vEyeSpacePos.w);
 
+				vec3 colorLinear = diffTex.rgb + diffTex.rgb * (ambient + Idiff) + Ispec;
+//				out_frag_color = vec4(colorLinear, diffTex.a);
+				vec4 gcc = vec4(pow(colorLinear, vec3(1.0/screenGamma)), diffTex.a);
+				out_frag_color = mix(gcc , fogColor, getFogFactor(fFogCoord));
+
+				/*
 				out_frag_color = vec4( 
 					mix(diffTex.rgb * Idiff , fogColor.rgb, getFogFactor(fFogCoord)),diffTex.a);
-/*
-				out_frag_color = vec4(diffTex.rgb * Idiff , diffTex.a)*fogColor;
-*/
-				
-			}";
-			Compile ();
-		}
 
+				out_frag_color = vec4(diffTex.rgb * Idiff , diffTex.a)*fogColor;
+				*/
+			}";
+						
+			base.Init ();
+		}
 		public int DiffuseTexture, NormalTexture;
 
 		protected override void BindSamplesSlots ()
@@ -154,12 +170,15 @@ namespace Tetra
 
 			GL.BindAttribLocation(pgmId, 2, "in_normal");
 			GL.BindAttribLocation(pgmId, 3, "in_tangent");
-			GL.BindAttribLocation(pgmId, IndexedVAO.instanceBufferIndex, "in_model");
+			GL.BindAttribLocation(pgmId, Tetra.IndexedVAO.instanceBufferIndex, "in_model");
 		}
+		int bi1, bi2;
 		protected override void GetUniformLocations ()
 		{	
-			GL.UniformBlockBinding(pgmId, GL.GetUniformBlockIndex(pgmId, "block_data"), 0);
-			GL.UniformBlockBinding(pgmId, GL.GetUniformBlockIndex(pgmId, "fogData"), 10);
+			bi1 = GL.GetUniformBlockIndex (pgmId, "block_data");
+			bi2 = GL.GetUniformBlockIndex (pgmId, "fogData");
+			GL.UniformBlockBinding(pgmId, bi1, 0);
+			GL.UniformBlockBinding(pgmId, bi2, 1);
 		}	
 		public override void Enable ()
 		{
@@ -171,4 +190,3 @@ namespace Tetra
 		}
 	}
 }
-
