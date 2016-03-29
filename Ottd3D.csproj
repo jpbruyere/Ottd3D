@@ -77,7 +77,6 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Shaders\CircleShader.cs" />
     <Compile Include="Shaders\BrushShader.cs" />
     <Compile Include="Shaders\SingleLightShader.cs" />
     <Compile Include="Shaders\VertexDispShader.cs" />
@@ -103,6 +102,7 @@
     <Compile Include="Terrain.cs" />
     <Compile Include="Shaders\Mat4InstancedShader.cs" />
     <Compile Include="Shaders\CacheRenderingShader.cs" />
+    <Compile Include="Shaders\CircleShader.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="ui\" />
@@ -129,7 +129,6 @@
     <EmbeddedResource Include="images\ground_cracks2v_d.jpg" />
     <EmbeddedResource Include="images\ground_cracks2y_d.jpg" />
     <EmbeddedResource Include="images\grass.jpg" />
-    <EmbeddedResource Include="Shaders\circle.frag" />
     <EmbeddedResource Include="Shaders\brush.frag" />
     <EmbeddedResource Include="ui\BrushImageItem.goml" />
     <EmbeddedResource Include="Shaders\hmBrush.frag" />
@@ -146,7 +145,6 @@
     <EmbeddedResource Include="images\skybox\top.bmp" />
     <EmbeddedResource Include="ui\fps.crow" />
     <EmbeddedResource Include="ui\tmpWindow.crow" />
-    <EmbeddedResource Include="Shaders\coloredSquare.frag" />
     <EmbeddedResource Include="ui\menu.crow" />
   </ItemGroup>
   <ItemGroup>

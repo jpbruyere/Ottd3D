@@ -13,7 +13,7 @@ uniform vec4 color;
 void main ()
 {	
 
-	float border = radius * 0.6;
+	float border = radius * 0.06;
 	vec2 uv = texCoord;
 	vec4 c = texture( tex, uv);
 

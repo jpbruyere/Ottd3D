@@ -20,7 +20,7 @@ using System.Security.Permissions;
 
 namespace Ottd3D
 {
-	class Ottd3DWindow : OpenTKGameWindow
+	public class Ottd3DWindow : OpenTKGameWindow
 	{
 		public enum GameState
 		{
@@ -322,6 +322,7 @@ namespace Ottd3D
 			CrowInterface.LoadInterface("#Ottd3D.ui.fps.crow").DataSource = this;
 			//LoadInterface("#Ottd3D.ui.menu.goml").DataSource = this;
 			CrowInterface.LoadInterface("#Ottd3D.ui.heightEditionMenu.goml").DataSource = terrain;
+			Crow.CompilerServices.ResolveBindings (terrain.Bindings);
 			CrowInterface.LoadInterface("#Ottd3D.ui.menu.crow").DataSource = this;
 		}
 			
@@ -414,10 +415,10 @@ namespace Ottd3D
 					terrain.SelectionRadius *= 1.25f;
 				else
 					terrain.SelectionRadius *= 0.8f;
-				if (terrain.SelectionRadius > 0.5f)
-					terrain.SelectionRadius = 0.5f;
-				else if (terrain.SelectionRadius < 0.0125f)
-					terrain.SelectionRadius = 0.0125f;				
+				if (terrain.SelectionRadius > 0.1f)
+					terrain.SelectionRadius = 0.1f;
+				else if (terrain.SelectionRadius < 1f/1024f)
+					terrain.SelectionRadius = 1f/1024f;
 				return;
 			}
 			if (Keyboard[OpenTK.Input.Key.ShiftLeft])
@@ -540,8 +541,6 @@ namespace Ottd3D
 		{
 			base.OnUpdateFrame (e);
 
-			Animation.ProcessAnimations ();
-
 			if (Keyboard [OpenTK.Input.Key.ShiftLeft]) {
 				float MoveSpeed = 10f;
 				//light movment
@@ -557,7 +556,7 @@ namespace Ottd3D
 					vLight.Z += MoveSpeed;
 				else if (Keyboard [OpenTK.Input.Key.PageDown])
 					vLight.Z -= MoveSpeed;
-				updateShadersMatrices ();
+				//updateShadersMatrices ();
 				//GL.Light (LightName.Light0, LightParameter.Position, vLight);
 			}
 
@@ -574,7 +573,10 @@ namespace Ottd3D
 //				depthSortingDone = false;
 //			}
 
-			terrain.Update ();
+			Animation.ProcessAnimations ();
+
+			terrain.Update (this);
+
 		}
 
 		protected override void OnResize (EventArgs e)

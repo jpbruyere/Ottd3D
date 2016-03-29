@@ -37,31 +37,14 @@ namespace Ottd3D
 		#endregion
 
 		int evenTex;
-		int centerLoc;
 
-		Vector2 center = new Vector2(0.5f,0.5f);
 		bool evenCycle = false;
 
-		public Vector2 Center {
-			get { return center; }
-			set { center = value; }
-		}
 		public override int OutputTex {
 			get { return evenCycle ? evenTex : tex; }
 		}
 		public int InputTex {
 			get { return evenCycle ? tex : evenTex;}
-		}
-		protected override void GetUniformLocations ()
-		{
-			base.GetUniformLocations ();
-
-			centerLoc = GL.GetUniformLocation(pgmId, "center");
-		}
-		public override void Enable ()
-		{
-			base.Enable ();
-			GL.Uniform2(centerLoc, center);
 		}
 
 		protected override void initFbo ()

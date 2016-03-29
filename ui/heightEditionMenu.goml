@@ -1,8 +1,11 @@
 ﻿<?xml version="1.0"?>
-<Window Font="droid bold, 10" Title="Height Map" Width="120" Height="100"
+<Window Font="droid bold, 10" Title="Height Map" Width="120" Height="400"
 	Template="#Ottd3D.ui.tmpWindow.crow"
 	HorizontalAlignment="Left" Top="10">
-	<VerticalStack Fit="true" Spacing="10" Margin="10">
+	<VerticalStack Height="0" Width="0" Spacing="5" Margin="2">
 		<Button Caption="Clear" MouseClick="onClear"/>
+		<Button Caption="Save" MouseClick="onSave"/>
+		<Button Caption="Load" MouseClick="onLoad"/>
+		<CheckBox Caption="Wireframe" IsChecked="{²Wireframe}"/>
 	</VerticalStack>				
 </Window>

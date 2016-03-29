@@ -1,14 +1,14 @@
 #version 330
 precision mediump float;
 
-layout (std140, index = 0) uniform block_data{
+layout (std140) uniform block_data{
 	mat4 Projection;
 	mat4 ModelView;
 	mat4 Normal;
 	vec4 lightPos;
 	vec4 Color;
 };
-layout (std140, index = 10) uniform fogData
+layout (std140) uniform fogData
 { 
 	vec4 fogColor;
 	float fStart; // This is only for linear fog
@@ -19,6 +19,10 @@ layout (std140, index = 10) uniform fogData
 
 uniform sampler2DArray tex;
 uniform sampler2D splatTex;
+
+uniform float sel_radius;
+uniform vec2 sel_center;
+uniform vec4 sel_color;
 
 in vec2 texCoord;
 in vec2 splatTexCoord;
@@ -54,7 +58,16 @@ float getFogFactor(float fFogCoord)
 
 void main(void)
 {
-	
+	float selCoef = 0.0;
+	float fFogCoord = abs(vEyeSpacePos.z/vEyeSpacePos.w);
+	if (sel_color.a > 0.0){
+		vec2 uv = splatTexCoord - sel_center * 0.5;
+		float dist =  sqrt(dot(uv, uv));
+		float border = sel_radius * 0.03 * sqrt(fFogCoord*0.1);
+		selCoef = 1.0 + smoothstep(sel_radius, sel_radius + border, dist) 
+			            - smoothstep(sel_radius - border, sel_radius, dist);		
+	}
+
 	vec3 l;
 	if (lightPos.w == 0.0)
 		l = normalize(-lightPos.xyz);
@@ -71,9 +84,11 @@ void main(void)
 	vec4 c = vec4(mix (t1, t2, splat.b) * nl, 1.0);
 
 	// Add fog
-   float fFogCoord = abs(vEyeSpacePos.z/vEyeSpacePos.w);
 
-	out_frag_color = mix(c, fogColor, getFogFactor(fFogCoord)); 
+	c = mix(c, fogColor, getFogFactor(fFogCoord));
+
+	out_frag_color = mix(sel_color, c, selCoef);
+
 //	ivec2 i = floatBitsToInt(vertex.xy);
 //	vec4 res = intBitsToFloat(ivec4(i.x , i.y , 1, 1));
 //	int x = floatBitsToInt(vertex.x);
@@ -83,6 +98,6 @@ void main(void)
 	//out_frag_selection = vertex;
 	//out_frag_selection = vec4(vertex.x, fract(vertex.x * 255.0), vertex.y, 1.0);
 
-	out_frag_selection = vec4(EncodeFloatRGBA(vertex.x), EncodeFloatRGBA(vertex.y));
+	out_frag_selection = vec4(EncodeFloatRGBA(vertex.x), EncodeFloatRGBA(vertex.y));	
 }
 

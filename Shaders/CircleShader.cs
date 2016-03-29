@@ -21,6 +21,7 @@
 using System;
 using GameLib;
 using OpenTK.Graphics.OpenGL;
+using OpenTK;
 
 namespace Ottd3D
 {
@@ -29,14 +30,23 @@ namespace Ottd3D
 		public CircleShader (string effectId, int _width = -1, int _height = -1, int initTex = 0)
 			: base(effectId, _width, _height, initTex)
 		{}
-
-		int radiusLoc;
+		int radiusLoc, centerLoc, colorLoc;
 
 		float radius = 0.5f;
+		Vector2 center;
+		Vector4 color = new Vector4(1,1,1,1);
 
 		public float Radius { 
 			set { radius = value; }
 			get { return radius; }
+		}
+		public Vector2 Center {
+			set { center = value; }
+			get { return center; }
+		}
+		public Vector4 Color {
+			set { color = value; }
+			get { return color; }
 		}
 
 
@@ -45,11 +55,15 @@ namespace Ottd3D
 			base.GetUniformLocations ();
 
 			radiusLoc = GL.GetUniformLocation(pgmId, "radius");
+			centerLoc = GL.GetUniformLocation(pgmId, "center");
+			colorLoc = GL.GetUniformLocation(pgmId, "color");
 		}
 		public override void Enable ()
 		{
 			base.Enable ();
 			GL.Uniform1(radiusLoc, radius);
+			GL.Uniform2(centerLoc, center);
+			GL.Uniform4(colorLoc, color);
 		}
 	}
 }
