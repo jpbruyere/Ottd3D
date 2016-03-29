@@ -139,8 +139,8 @@ namespace Ottd3D
 			vaoi.UpdateInstancesData ();
 
 			//HEOLIENNES
-			vaoi = landItemsVao.Add (Tetra.OBJMeshLoader.Load ("/mnt/data/blender/ottd3d/heolienne.obj"));
-			vaoi.DiffuseTexture = new Texture("/mnt/data/blender/ottd3d/heolienne.png");
+			vaoi = landItemsVao.Add (Tetra.OBJMeshLoader.Load ("Meshes/heolienne.obj"));
+			vaoi.DiffuseTexture = new Texture("Meshes/heolienne.png");
 			vaoi.Datas = new Tetra.VAOInstancedData[nbHeol];
 			for (int i = 0; i < nbHeol; i++) {
 				Vector2 pos = new Vector2 ((float)rnd.Next(0,terrain.GridSize), (float)rnd.Next(0,terrain.GridSize));

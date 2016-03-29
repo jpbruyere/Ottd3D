@@ -158,26 +158,6 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\..\..\data\obj\heolienne.mtl">
-      <Link>Meshes\heolienne.mtl</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="..\..\..\data\obj\heolienne.obj.bmp">
-      <Link>Meshes\heolienne.obj.bmp</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="..\..\..\data\obj\heolienne.obj">
-      <Link>Meshes\heolienne.obj</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="..\..\..\data\obj\heolienne14.mtl">
-      <Link>Meshes\heolienne14.mtl</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="..\..\..\data\obj\heolienne14.obj">
-      <Link>Meshes\heolienne14.obj</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
     <None Include="Meshes\cubetest.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
@@ -221,6 +201,12 @@
     </None>
     <None Include="..\..\..\data\downloads\3d\trees\birch_tree_small_20131230_2041956203.png">
       <Link>images\trees\birch_tree_small_20131230_2041956203.png</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Meshes\heolienne.obj">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Meshes\heolienne.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
