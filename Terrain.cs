@@ -35,7 +35,8 @@ namespace Ottd3D
 			Play,
 			HMEdition,
 			ClearHM,
-			LoadHM,
+			ClearSplatting,
+			LoadMap,
 			GroundTexturing
 		}
 
@@ -61,6 +62,7 @@ namespace Ottd3D
 		System.Drawing.Size cacheSize;
 		float selectionRadius = 1f/1024f;
 		State currentState = State.ClearHM;
+		Vector4 splatBrush = new Vector4(0f, 1f/255f, 100f/255f, 1f);
 
 		bool wireframe = false;
 
@@ -138,6 +140,33 @@ namespace Ottd3D
 		}
 		public string[] GroundTextures { get { return groundTextures; }}
 
+		public int SplatBrushSplat1 {
+			get { return (int)(splatBrush.X * 255); }
+			set {
+				if (value == SplatBrushSplat1)
+					return;
+				splatBrush.X = (float)value / 255f;
+				NotifyValueChanged ("SplatBrushSplat1", SplatBrushSplat1);
+			}
+		}
+		public int SplatBrushSplat2 {
+			get { return (int)(splatBrush.Y * 255); }
+			set {
+				if (value == SplatBrushSplat2)
+					return;
+				splatBrush.Y = (float)value / 255f;
+				NotifyValueChanged ("SplatBrushSplat2", SplatBrushSplat2);
+			}
+		}
+		public int SplatBrushPressure {
+			get { return (int)(splatBrush.Z * 255); }
+			set {
+				if (value == SplatBrushPressure)
+					return;
+				splatBrush.Z = (float)value / 255f;
+				NotifyValueChanged ("SplatBrushPressure", SplatBrushPressure);
+			}
+		}
 		public System.Drawing.Size CacheSize {
 			get { return cacheSize; }
 			set {
@@ -160,7 +189,10 @@ namespace Ottd3D
 		public float HeightScale {
 			get { return heightScale; }
 			set {
+				if (value == heightScale)
+					return;
 				heightScale = value;
+				NotifyValueChanged ("HeightScale", heightScale);
 			}
 		}
 
@@ -191,7 +223,9 @@ namespace Ottd3D
 		Tetra.SkyBox skybox;
 		vaoMesh gridMesh;
 
-		BrushShader hmGenerator;
+		BrushShader	hmGenerator,
+					splattingBrushShader;
+
 		Ottd3D.VertexDispShader gridShader;
 		Tetra.Shader cacheShader;
 
@@ -223,7 +257,6 @@ namespace Ottd3D
 			initGridMaps ();
 
 			cacheShader = new Tetra.Shader();			
-
 		}
 		void initGridMaps(){
 
@@ -233,19 +266,32 @@ namespace Ottd3D
 				GL.DeleteTexture (gridShader.SplatTexture);
 			if (hmGenerator != null)
 				hmGenerator.Dispose ();
+			if (splattingBrushShader != null)
+				splattingBrushShader.Dispose ();
 			
 			Tetra.Texture.DefaultMagFilter = TextureMagFilter.Nearest;
 			Tetra.Texture.DefaultMinFilter = TextureMinFilter.Nearest;
 			Tetra.Texture.GenerateMipMaps = false;
 			Tetra.Texture.FlipY = false;
 			{
-				gridShader.DisplacementMap = Tetra.Texture.Load ("heightmap.png");
-				gridShader.SplatTexture = Tetra.Texture.Load ("splat.png");
+				try {
+					gridShader.DisplacementMap = Tetra.Texture.Load ("heightmap.png");	
+				} catch {
+					gridShader.DisplacementMap = new Tetra.Texture (HmSize, HmSize);
+				}
+				try {
+					gridShader.SplatTexture = Tetra.Texture.Load ("splat.png");	
+				} catch{
+					gridShader.SplatTexture = new Tetra.Texture (_splatingSize, _splatingSize);
+				}
+
 			}
-			Tetra.Texture.ResetToDefaultLoadingParams ();
+
 
 			hmGenerator = new BrushShader ("Ottd3D.Shaders.hmBrush",_hmSize, _hmSize, gridShader.DisplacementMap);
-			Texture.SetTexFilterNeareast (hmGenerator.InputTex);
+			splattingBrushShader = new BrushShader ("Ottd3D.Shaders.brush", _splatingSize, _splatingSize, gridShader.SplatTexture);
+
+			Tetra.Texture.ResetToDefaultLoadingParams ();
 		}
 		void initGrid()
 		{
@@ -408,9 +454,12 @@ namespace Ottd3D
 		public void Update(Ottd3DWindow win){
 			switch (CurrentState) {
 			case State.Play:
-				
+				if (win.CrowInterface.hoverWidget != null)
+					break;				
 				break;
 			case State.HMEdition:
+				if (win.CrowInterface.hoverWidget != null)
+					break;
 				if (win.Mouse [OpenTK.Input.MouseButton.Left]) {
 					hmGenerator.Color = new Vector4 (0f, 1f / 255f, 0f, 1f);
 					updateHeightMap ();
@@ -428,12 +477,27 @@ namespace Ottd3D
 				gridCacheIsUpToDate = false;
 				CurrentState = State.HMEdition;
 				break;
-			case State.LoadHM:
+			case State.ClearSplatting:
+				splattingBrushShader.Clear ();
+				gridShader.SplatTexture = splattingBrushShader.OutputTex;
+				gridCacheIsUpToDate = false;
+				CurrentState = State.GroundTexturing;
+				break;
+			case State.LoadMap:
 				initGridMaps ();
 				gridCacheIsUpToDate = false;
-				currentState = State.HMEdition;
+				currentState = State.Play;
 				break;
 			case State.GroundTexturing:
+				if (win.CrowInterface.hoverWidget != null)
+					break;
+				if (win.Mouse [OpenTK.Input.MouseButton.Left]) {
+					splattingBrushShader.Color = splatBrush;
+					updateSplatting ();
+				} else if (win.Mouse [OpenTK.Input.MouseButton.Right]) {
+					splattingBrushShader.Color = new Vector4 (splatBrush.X, splatBrush.Y, -splatBrush.Z, 1f);
+					updateSplatting ();
+				}				
 				break;
 			}
 
@@ -467,6 +531,15 @@ namespace Ottd3D
 				PixelFormat.Rgba, PixelType.UnsignedByte, hmData);
 
 			GL.BindTexture (TextureTarget.Texture2D, 0);
+		}
+		void updateSplatting()
+		{			
+			splattingBrushShader.Radius = SelectionRadius;
+			splattingBrushShader.Center = SelectionPos.Xy * 4f / (float)(_splatingSize);
+			//splattingBrushShader.Center = gridShader.SelectionCenter;
+			splattingBrushShader.Update ();
+			gridShader.SplatTexture = splattingBrushShader.OutputTex;
+			gridCacheIsUpToDate = false;
 		}
 		void updateHeightMap()
 		{			
@@ -515,14 +588,17 @@ namespace Ottd3D
 			}
 		}
 		void onSave(object sender, Crow.MouseButtonEventArgs e){
-			//Texture.Save (splattingBrushShader.OutputTex, @"splat.png");
+			Texture.Save (splattingBrushShader.OutputTex, @"splat.png");
 			Texture.Save (hmGenerator.OutputTex, @"heightmap.png");
 		}
 		void onLoad(object sender, Crow.MouseButtonEventArgs e){
-			CurrentState = State.LoadHM;
+			CurrentState = State.LoadMap;
 		}
-		void onClear(object sender, Crow.MouseButtonEventArgs e){
+		void onClearHM(object sender, Crow.MouseButtonEventArgs e){
 			CurrentState = State.ClearHM;
+		}
+		void onClearSplatting(object sender, Crow.MouseButtonEventArgs e){
+			CurrentState = State.ClearSplatting;
 		}
 		#endregion
 

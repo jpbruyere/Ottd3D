@@ -1,22 +1,27 @@
 ﻿<?xml version="1.0"?>
-<Border BorderWidth="2" Width="-1" Height="0" Margin="20"
-		HorizontalAlignment="Right"
-		Background="0,5;0,5;0,7;0,7" CornerRadius="5">
-	<VerticalStack>
-		<TextRun Text="Brush Pressure:"/>
-		<Slider Height="10" Width="100"/>
-		<Popper Title="First texture" Image="{FirstSplatTextureName}"
-			Template="#Ottd3D.ui.SplatTexPopTemplate.goml">
-			<ListBox Data="{GroundTextures}" Width="-1" Height="300" Margin="20"
-						ItemTemplate="#Ottd3D.ui.BrushImageItem.goml"
-						SelectedItemChanged="onFirstBrushChanged"/>
-		</Popper>
-		<Popper Title="Second texture" Image="{SecondSplatTextureName}"
-			Template="#Ottd3D.ui.SplatTexPopTemplate.goml">
-			<ListBox Data="{GroundTextures}" Width="-1" Height="300" Margin="20"
-						ItemTemplate="#Ottd3D.ui.BrushImageItem.goml"
-						SelectedItemChanged="onSecondBrushChanged"/>
-		</Popper>
-		<Button Text="Save" MouseClick="onSave"/>
-	</VerticalStack>
-</Border>
+<Window Font="droid bold, 10" Title="Splatting" Width="200" Height="400"
+	Template="#Ottd3D.ui.tmpWindow.crow"
+	HorizontalAlignment="Right" Top="10">
+	<VerticalStack Height="0" Width="0" Spacing="5" Margin="2">
+		<Button Caption="Clear" MouseClick="onClearSplatting"/>
+		<HorizontalStack Fit="true">
+			<Label Font="droid, 10" Text="Brush Pressure: "/>
+			<Label Font="droid bold, 10" Text="{SplatBrushPressure}"/>
+		</HorizontalStack>
+		<Slider Width="150" Height="16"
+			Minimum="1" Maximum="255"
+			SmallIncrement="1" LargeIncrement="2"
+			Value="{²SplatBrushPressure}"/>
+		<Label Font="droid, 10" Text="1st Splat"/>
+		<ComboBox Data="{GroundTextures}" Width="-1"
+			SelectedIndex="{²SplatBrushSplat1}"
+			Template="#Ottd3D.ui.SplatTexPopTemplate.goml"
+			ItemTemplate="#Ottd3D.ui.BrushImageItem.goml"/>
+		<GraphicObject Height="10"/>
+		<Label Font="droid, 10" Text="2nd Splat"/>
+		<ComboBox Data="{GroundTextures}" Width="-1"
+			SelectedIndex="{²SplatBrushSplat2}"
+			Template="#Ottd3D.ui.SplatTexPopTemplate.goml"
+			ItemTemplate="#Ottd3D.ui.BrushImageItem.goml"/>
+	</VerticalStack>				
+</Window>

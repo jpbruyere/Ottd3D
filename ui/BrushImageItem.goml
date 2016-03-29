@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0"?>
-<Image Fit="true" Path="{}" MaximumSize="80;80" Focusable="true" 
-			Margin="1"
+<Image Height="-1" Width="0" Path="{}" MaximumSize="100;40" Focusable="true" 
+			Margin="3"
 			MouseEnter="{Background=BlueCrayola}"
 			MouseLeave="{Background=Transparent}"/>

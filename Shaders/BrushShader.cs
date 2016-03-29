@@ -50,9 +50,9 @@ namespace Ottd3D
 		protected override void initFbo ()
 		{
 			if (!GL.IsTexture (tex))
-				tex = new Texture (width, height);
+				tex = new Tetra.Texture (width, height);
 			if (!GL.IsTexture (evenTex))
-				evenTex = new Texture (width, height);
+				evenTex = new Tetra.Texture (width, height);
 
 			GL.GenFramebuffers(1, out fbo);
 

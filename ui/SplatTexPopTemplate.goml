@@ -1,7 +1,29 @@
 ﻿<?xml version="1.0"?>
-<Border BorderWidth="1" Foreground="LightGray" Height="-1" Width="{../WidthPolicy}">
-	<HorizontalStack Spacing="1" Height="-1"  Width="{../../WidthPolicy}">
-		<Image Margin="2" Width="12" Height="12" Path="{../../../Image}" SvgSub="{../../../IsPopped}"/>
-		<Label Text="{../../../Caption}"  Width="{../../../WidthPolicy}"/>
-	</HorizontalStack>
-</Border>
+<Popper Name="popper" PopDirection="Bottom" Height="{../HeightPolicy}" Width="{../WidthPolicy}">
+	<Template>
+		<Border CornerRadius="0" Foreground="LightGray" Height="{../../HeightPolicy}" Width="{../../WidthPolicy}">
+			<HorizontalStack Margin="1" Spacing="1" Height="{../../../HeightPolicy}" Width="{../../../WidthPolicy}">
+				<Image Path="{../../../../SelectedItem}" MaximumSize="40;40"
+					Margin="1"
+					Height="{../../../../HeightPolicy}" Width="{../../../../WidthPolicy}"/>
+				<Button Width="14" Height="0" Focusable="false"
+					Template="#Crow.Templates.ArrowButTemplate.crow">
+					<Image Margin="0"  Path="#Crow.Images.Icons.updown.svg" SvgSub="down"/>
+				</Button>
+			</HorizontalStack>
+		</Border>
+	</Template>
+	<Border Background="DimGray" BorderWidth="1" Margin="1"		
+		Fit="true">
+		<Scroller  Name="scroller1" Margin="2" VerticalScrolling="true"
+			MinimumSize="{../../../MinimumPopupSize}" MaximumSize="0;200"
+			Fit="true"
+			HorizontalAlignment="Left"
+			ValueChanged="../../../_scroller_ValueChanged">
+			<VerticalStack LayoutChanged="../../../../_list_LayoutChanged"
+				Fit="true" Name="List" Margin="0"
+				HorizontalAlignment="Left"
+				VerticalAlignment="Top"/>
+		</Scroller>
+	</Border>
+</Popper>

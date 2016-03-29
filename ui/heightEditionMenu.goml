@@ -3,7 +3,7 @@
 	Template="#Ottd3D.ui.tmpWindow.crow"
 	HorizontalAlignment="Left" Top="10">
 	<VerticalStack Height="0" Width="0" Spacing="5" Margin="2">
-		<Button Caption="Clear" MouseClick="onClear"/>
+		<Button Caption="Clear" MouseClick="onClearHM"/>
 		<Button Caption="Save" MouseClick="onSave"/>
 		<Button Caption="Load" MouseClick="onLoad"/>
 		<CheckBox Caption="Wireframe" IsChecked="{²Wireframe}"/>

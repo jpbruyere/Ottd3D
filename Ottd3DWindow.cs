@@ -284,9 +284,6 @@ namespace Ottd3D
 
 		#endregion
 
-
-
-
 		public void UpdateViewMatrix()
 		{
 			Rectangle r = this.ClientRectangle;
@@ -309,7 +306,6 @@ namespace Ottd3D
 
 		}			
 			
-
 		#region Interface
 		void initInterface()
 		{
@@ -321,8 +317,11 @@ namespace Ottd3D
 
 			CrowInterface.LoadInterface("#Ottd3D.ui.fps.crow").DataSource = this;
 			//LoadInterface("#Ottd3D.ui.menu.goml").DataSource = this;
+
 			CrowInterface.LoadInterface("#Ottd3D.ui.heightEditionMenu.goml").DataSource = terrain;
+			CrowInterface.LoadInterface("#Ottd3D.ui.SpattingMenu.goml").DataSource = terrain;
 			Crow.CompilerServices.ResolveBindings (terrain.Bindings);
+
 			CrowInterface.LoadInterface("#Ottd3D.ui.menu.crow").DataSource = this;
 		}
 			
