@@ -19,8 +19,16 @@ namespace Ottd3D
 			layout (location = 0) in vec3 in_position;
 			layout (location = 1) in vec2 in_tex;
 			layout (location = 2) in vec3 in_normal;
-			layout (location = 3) in vec3 in_tangent;
+			layout (location = 3) in vec4 in_weights;
 			layout (location = 4) in mat4 in_model;
+			layout (location = 8) in vec4 in_quat0;
+			layout (location = 9) in vec4 in_quat1;
+			layout (location = 10) in vec4 in_quat2;
+			layout (location = 11) in vec4 in_quat3;
+			layout (location = 12) in vec4 in_bpos0;
+			layout (location = 13) in vec4 in_bpos1;
+			layout (location = 14) in vec4 in_bpos2;
+			layout (location = 15) in vec4 in_bpos3;
 
 			layout (std140) uniform block_data{
 				mat4 Projection;
@@ -31,23 +39,42 @@ namespace Ottd3D
 			};
 
 			out vec2 texCoord;			
-			out vec3 n;
-			out vec3 t;
+			out vec3 n;			
 			out vec4 vEyeSpacePos;
 			
+			vec3 qtransform( vec4 q, vec3 v ){ 
+				return v + 2.0*cross(cross(v, q.xyz ) + q.w*v, q.xyz);
+			}
 
 			void main(void)
-			{				
+			{
+				vec3 inN = in_normal;				
+				vec3 inP = in_position;
+
+				vec4 bpos = in_bpos0;
+
+				vec4 q = in_quat0 * in_weights.x;		
+				inN = inN - in_bpos0.xyz;
+				inN = qtransform(q, inN);
+				inN = inN + in_bpos0.xyz;
+				inP = inP - in_bpos0.xyz;
+				inP = qtransform(q, inP);
+				inP = inP + in_bpos0.xyz;
+
+				q = in_quat1 * in_weights.y;		
+				inN = inN - in_bpos1.xyz;
+				inN = qtransform(q, inN);
+				inN = inN + in_bpos1.xyz;
+				inP = inP - in_bpos1.xyz;
+				inP = qtransform(q, inP);
+				inP = inP + in_bpos1.xyz;
 
 				texCoord = in_tex;
-				n = vec3(Normal * in_model * vec4(in_normal, 0));
-				t = vec3(Normal * in_model * vec4(in_tangent, 0));
+				n = vec3(Normal * in_model * vec4(inN, 0));
 
-				vec3 pos = in_position.xyz;
-
-				vEyeSpacePos = ModelView * in_model * vec4(pos, 1);
+				vEyeSpacePos = ModelView * in_model * vec4(inP, 1);
 				
-				gl_Position = Projection * ModelView * in_model * vec4(pos, 1);
+				gl_Position = Projection * ModelView * in_model * vec4(inP, 1);
 			}";
 
 			fragSource = @"
@@ -79,8 +106,7 @@ namespace Ottd3D
 
 			in vec2 texCoord;			
 			in vec4 vEyeSpacePos;
-			in vec3 n;
-			in vec3 t;
+			in vec3 n;			
 			
 			out vec4 out_frag_color;
 
@@ -99,22 +125,22 @@ namespace Ottd3D
 			   return fResult;
 			}
 
-			vec3 CalcBumpedNormal()
-			{
-			    vec3 Normal = normalize(n);
-			    vec3 Tangent = normalize(t);
-			    Tangent = normalize(Tangent - dot(Tangent, Normal) * Normal);
-			    vec3 Bitangent = cross(Tangent, Normal);
-			    vec3 BumpMapNormal = texture(normal, texCoord).xyz;
-			    BumpMapNormal = 2.0 * BumpMapNormal - vec3(1.0, 1.0, 1.0);
-			    vec3 NewNormal;
-			    mat3 TBN = mat3(Tangent, Bitangent, Normal);
-			    NewNormal = TBN * BumpMapNormal;
-			    NewNormal = normalize(NewNormal);
-			    return NewNormal;
-			}
+//			vec3 CalcBumpedNormal()
+//			{
+//			    vec3 Normal = normalize(n);
+//			    vec3 Tangent = normalize(t);
+//			    Tangent = normalize(Tangent - dot(Tangent, Normal) * Normal);
+//			    vec3 Bitangent = cross(Tangent, Normal);
+//			    vec3 BumpMapNormal = texture(normal, texCoord).xyz;
+//			    BumpMapNormal = 2.0 * BumpMapNormal - vec3(1.0, 1.0, 1.0);
+//			    vec3 NewNormal;
+//			    mat3 TBN = mat3(Tangent, Bitangent, Normal);
+//			    NewNormal = TBN * BumpMapNormal;
+//			    NewNormal = normalize(NewNormal);
+//			    return NewNormal;
+//			}
 
-			const vec3 diffuse = vec3(0.7, 0.7, 0.7);
+			const vec3 diffuse = vec3(0.5, 0.5, 0.5);
 			const vec3 ambient = vec3(0.01, 0.01, 0.01);
 			const vec3 specular = vec3(0.0,0.0,0.0);
 			const float shininess = 1.0;
@@ -169,8 +195,17 @@ namespace Ottd3D
 			base.BindVertexAttributes ();
 
 			GL.BindAttribLocation(pgmId, 2, "in_normal");
-			GL.BindAttribLocation(pgmId, 3, "in_tangent");
-			GL.BindAttribLocation(pgmId, Tetra.IndexedVAO.instanceBufferIndex, "in_model");
+			//GL.BindAttribLocation(pgmId, 3, "in_tangent");
+			GL.BindAttribLocation(pgmId, 3, "in_weights");
+			GL.BindAttribLocation(pgmId, 4, "in_model");
+			GL.BindAttribLocation(pgmId, 8, "in_quat0");
+			GL.BindAttribLocation(pgmId, 9, "in_quat1");
+			GL.BindAttribLocation(pgmId, 10, "in_quat2");
+			GL.BindAttribLocation(pgmId, 11, "in_quat3");
+			GL.BindAttribLocation(pgmId, 12, "in_bpos0");
+			GL.BindAttribLocation(pgmId, 13, "in_bpos1");
+			GL.BindAttribLocation(pgmId, 14, "in_bpos2");
+			GL.BindAttribLocation(pgmId, 15, "in_bpos3");
 		}
 		int bi1, bi2;
 		protected override void GetUniformLocations ()

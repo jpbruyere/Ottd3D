@@ -16,7 +16,8 @@ using GGL;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Permissions;
-
+using Tetra;
+using Tetra.DynamicShading;
 
 namespace Ottd3D
 {
@@ -99,7 +100,7 @@ namespace Ottd3D
 			get { return new Vector2 (Mouse.X, Mouse.Y); }
 		}
 
-		Tetra.IndexedVAO<Tetra.VAOInstancedData> landItemsVao, transparentItemsVao;
+		VertexArrayObject<WeightedMeshData, WeightedInstancedData> landItemsVao, transparentItemsVao;
 		Terrain terrain;
 
 
@@ -113,90 +114,77 @@ namespace Ottd3D
 			GL.Enable (EnableCap.Blend);
 			GL.BlendFunc(BlendingFactorSrc.SrcAlpha, BlendingFactorDest.OneMinusSrcAlpha);
 		}
+		VAOItem<WeightedInstancedData> heoliennes;
 		void initScene(){
+			const int nbHeol = 5;
 			terrain = new Terrain (ClientRectangle.Size);
-
-			#region test IndexedVAO
-			int tcDiffTex = new Texture("/mnt/data/blender/ottd3d/testcube-diff.jpg");
-			int tcNormTex = new Texture("/mnt/data/blender/ottd3d/testcube-norm.jpg");
-
-			int houseDiffTex = new Texture("/mnt/data/Images/texture/structures/house-diff.png");
-			int houseNormTex = new Texture("/mnt/data/Images/texture/structures/house-norm.png");
-
-			const int nbHeol = 5, heolSpacing = 4;
-			Tetra.VAOItem<Tetra.VAOInstancedData> vaoi = null;
-			landItemsVao = new Tetra.IndexedVAO<Tetra.VAOInstancedData> ();
-
-			//TEST HOUSE
-			vaoi = landItemsVao.Add (Tetra.OBJMeshLoader.Load ("/mnt/data/blender/ottd3d/house0.obj"));
-			vaoi.DiffuseTexture = houseDiffTex;
-			vaoi.NormalMapTexture = houseNormTex;
-			vaoi.Datas = new Tetra.VAOInstancedData[nbHeol];
-			for (int i = 0; i < nbHeol; i++) {
-				Vector2 pos = new Vector2 ((float)rnd.Next(0,terrain.GridSize), (float)rnd.Next(0,terrain.GridSize));
-				vaoi.Datas[i].modelMats = Matrix4.CreateTranslation (pos.X-(pos.X % 4f) + 0.5f, pos.Y-(pos.Y % 4f) + 0.5f, 0f);
-			}
-			vaoi.UpdateInstancesData ();
-
+			landItemsVao = new VertexArrayObject<WeightedMeshData, WeightedInstancedData> ();
 			//HEOLIENNES
-			vaoi = landItemsVao.Add (Tetra.OBJMeshLoader.Load ("Meshes/heolienne.obj"));
-			vaoi.DiffuseTexture = new Texture("Meshes/heolienne.png");
-			vaoi.Datas = new Tetra.VAOInstancedData[nbHeol];
+			heoliennes = (VAOItem<WeightedInstancedData>)landItemsVao.Add (OBJMeshLoader.Load ("Meshes/heolienne.obj"));
+			heoliennes.DiffuseTexture = Tetra.Texture.Load ("Meshes/heolienne.png");
+			heoliennes.InstancedDatas = new Tetra.WeightedInstancedData[nbHeol];
 			for (int i = 0; i < nbHeol; i++) {
 				Vector2 pos = new Vector2 ((float)rnd.Next(0,terrain.GridSize), (float)rnd.Next(0,terrain.GridSize));
-				vaoi.Datas[i].modelMats = Matrix4.CreateTranslation (pos.X-(pos.X % 4f) + 0.5f, pos.Y-(pos.Y % 4f) + 0.5f, 0f);
+				heoliennes.InstancedDatas[i].modelMats = Matrix4.CreateTranslation (pos.X-(pos.X % 4f) + 0.5f, pos.Y-(pos.Y % 4f) + 0.5f, 0f);
+				heoliennes.InstancedDatas [i].quat0 = Quaternion.Identity;
+				heoliennes.InstancedDatas [i].quat1 = Quaternion.Identity;
+				heoliennes.InstancedDatas [i].quat2 = Quaternion.Identity;
+				heoliennes.InstancedDatas [i].quat3 = Quaternion.Identity;
+				heoliennes.InstancedDatas [i].bpos0 = new Vector4 (0f, 0f, 0f, 0f);
+				heoliennes.InstancedDatas [i].bpos1 = new Vector4 (0f, 0f, 10f, 0f);
+				heoliennes.InstancedDatas [i].bpos2 = new Vector4 (0f, 0f, 0f, 0f);
+				heoliennes.InstancedDatas [i].bpos3 = new Vector4 (0f, 0f, 0f, 0f);
 			}
-			vaoi.UpdateInstancesData();
+			heoliennes.UpdateInstancesData();
 
-			landItemsVao.ComputeTangents();
+			//landItemsVao.ComputeTangents();
 			landItemsVao.BuildBuffers ();
-			#endregion
 
-			const float treezone = 32;
-			const int treeCount = 50;
-			transparentItemsVao = new Tetra.IndexedVAO<Tetra.VAOInstancedData> ();
-
-			//====TREE1====
-			//			vaoi = transparentItemsVao.Add (Tetra.OBJMeshLoader.Load ("#Ottd3D.images.trees.obj__pinet1.obj"));
-			//			vaoi.DiffuseTexture = Tetra.Texture.Load("#Ottd3D.images.trees.pinet1.png");
-			//			vaoi.modelMats = new Matrix4[treeCount];
-			//			for (int i = 0; i < treeCount; i++) {				
-			//				Vector2 pos = new Vector2 ((float)rnd.NextDouble() * treezone, (float)rnd.NextDouble() * treezone);
-			//				float scale = (float)rnd.NextDouble () * 0.002f + 0.004f;
-			//				vaoi.modelMats[i] =treeRot * Matrix4.CreateScale (scale)* Matrix4.CreateTranslation(pos.X, pos.Y, 0f);
-			//			}
-			//			vaoi.UpdateInstancesData ();
-
-			//====TREE2====
-			//			addRandomTrees (transparentItemsVao, treeCount,
-			//				"#Ottd3D.images.trees.simple.obj",
-			//				"#Ottd3D.images.trees.birch_tree_small_20131230_2041956203.png",400f);
-
-			//			addRandomTrees (transparentItemsVao, treeCount,
-			//				"#Ottd3D.images.trees.obj__pinet1.obj",
-			//				"#Ottd3D.images.trees.pinet1.png",5f);
-			addRandomTrees (transparentItemsVao, treeCount,
-				"images/trees/obj__pinet2.obj",
-				"images/trees/pinet2.png",3f);
-			//			addRandomTrees (transparentItemsVao, treeCount,
-			//				"#Ottd3D.images.trees.obj__tree1.obj",
-			//				"#Ottd3D.images.trees.tree1.png",5f);
-			//			addRandomTrees (transparentItemsVao, treeCount,
-			//				"#Ottd3D.images.trees.obj__tree2.obj",
-			//				"#Ottd3D.images.trees.tree2.png", 5f);
-			//			addRandomTrees (transparentItemsVao, treeCount,
-			//				"#Ottd3D.images.trees.obj__tree3.obj",
-			//				"#Ottd3D.images.trees.tree3.png", 5f);
-
-			transparentItemsVao.ComputeTangents ();
-			transparentItemsVao.BuildBuffers ();
+//			const float treezone = 32;
+//			const int treeCount = 50;
+//			transparentItemsVao = new VertexArrayObject<MeshData, VAOInstancedData> ();
+//
+//			//====TREE1====
+//			//			vaoi = transparentItemsVao.Add (Tetra.OBJMeshLoader.Load ("#Ottd3D.images.trees.obj__pinet1.obj"));
+//			//			vaoi.DiffuseTexture = Tetra.Texture.Load("#Ottd3D.images.trees.pinet1.png");
+//			//			vaoi.modelMats = new Matrix4[treeCount];
+//			//			for (int i = 0; i < treeCount; i++) {				
+//			//				Vector2 pos = new Vector2 ((float)rnd.NextDouble() * treezone, (float)rnd.NextDouble() * treezone);
+//			//				float scale = (float)rnd.NextDouble () * 0.002f + 0.004f;
+//			//				vaoi.modelMats[i] =treeRot * Matrix4.CreateScale (scale)* Matrix4.CreateTranslation(pos.X, pos.Y, 0f);
+//			//			}
+//			//			vaoi.UpdateInstancesData ();
+//
+//			//====TREE2====
+//			//			addRandomTrees (transparentItemsVao, treeCount,
+//			//				"#Ottd3D.images.trees.simple.obj",
+//			//				"#Ottd3D.images.trees.birch_tree_small_20131230_2041956203.png",400f);
+//
+//			//			addRandomTrees (transparentItemsVao, treeCount,
+//			//				"#Ottd3D.images.trees.obj__pinet1.obj",
+//			//				"#Ottd3D.images.trees.pinet1.png",5f);
+//			addRandomTrees (transparentItemsVao, treeCount,
+//				"images/trees/obj__pinet2.obj",
+//				"images/trees/pinet2.png",3f);
+//			//			addRandomTrees (transparentItemsVao, treeCount,
+//			//				"#Ottd3D.images.trees.obj__tree1.obj",
+//			//				"#Ottd3D.images.trees.tree1.png",5f);
+//			//			addRandomTrees (transparentItemsVao, treeCount,
+//			//				"#Ottd3D.images.trees.obj__tree2.obj",
+//			//				"#Ottd3D.images.trees.tree2.png", 5f);
+//			//			addRandomTrees (transparentItemsVao, treeCount,
+//			//				"#Ottd3D.images.trees.obj__tree3.obj",
+//			//				"#Ottd3D.images.trees.tree3.png", 5f);
+//
+//			//transparentItemsVao.ComputeTangents ();
+//			transparentItemsVao.BuildBuffers ();
 
 
 		}
 		void drawScene(){
 			terrain.Render ();
 
-			GL.Disable (EnableCap.Blend);
+//			GL.Disable (EnableCap.Blend);
 			objShader.Enable ();
 
 			landItemsVao.Bind ();
@@ -207,37 +195,37 @@ namespace Ottd3D
 			//			GL.Enable (EnableCap.Blend);
 			//			GL.Enable (EnableCap.AlphaTest);
 
-			transparentItemsVao.Bind ();
+//			transparentItemsVao.Bind ();
+//
+//			//GL.Disable (EnableCap.Blend);
+//			//GL.BlendFunc(BlendingFactorSrc.One, BlendingFactorDest.Zero );
+//			//			GL.BlendFunc (BlendingFactorSrc.SrcAlpha, BlendingFactorDest.OneMinusSrcAlpha);
+//			//			GL.DepthMask (false);
+//
+//
+//			//			GL.AlphaFunc (AlphaFunction.Greater, 0.0f);
+//			//			GL.DepthMask (false);
+//
+//			GL.Enable (EnableCap.Blend);
+//			//GL.Disable (EnableCap.DepthTest);
+//
+//			transparentItemsVao.Render (PrimitiveType.Triangles);
+//
+//			//GL.Enable (EnableCap.DepthTest);
+//
+//			//			GL.AlphaFunc (AlphaFunction.Equal, 1.0f);
+//			//			GL.DepthMask (true);
+//			//			transparentItemsVao.Render (PrimitiveType.Triangles);
+//
+//			//GL.Disable (EnableCap.Blend);
+//			//GL.Disable (EnableCap.AlphaTest);
+//			//
+//			//			GL.BlendFunc (BlendingFactorSrc.SrcAlpha, BlendingFactorDest.OneMinusSrcAlpha);
+//
+//
+//			transparentItemsVao.Unbind ();
 
-			//GL.Disable (EnableCap.Blend);
-			//GL.BlendFunc(BlendingFactorSrc.One, BlendingFactorDest.Zero );
-			//			GL.BlendFunc (BlendingFactorSrc.SrcAlpha, BlendingFactorDest.OneMinusSrcAlpha);
-			//			GL.DepthMask (false);
-
-
-			//			GL.AlphaFunc (AlphaFunction.Greater, 0.0f);
-			//			GL.DepthMask (false);
-
-			GL.Enable (EnableCap.Blend);
-			//GL.Disable (EnableCap.DepthTest);
-
-			transparentItemsVao.Render (PrimitiveType.Triangles);
-
-			//GL.Enable (EnableCap.DepthTest);
-
-			//			GL.AlphaFunc (AlphaFunction.Equal, 1.0f);
-			//			GL.DepthMask (true);
-			//			transparentItemsVao.Render (PrimitiveType.Triangles);
-
-			//GL.Disable (EnableCap.Blend);
-			//GL.Disable (EnableCap.AlphaTest);
-			//
-			//			GL.BlendFunc (BlendingFactorSrc.SrcAlpha, BlendingFactorDest.OneMinusSrcAlpha);
-
-
-			transparentItemsVao.Unbind ();
-
-			RailTrack.Render ();			
+			//RailTrack.Render ();			
 		}
 
 		#region Shaders
@@ -474,15 +462,16 @@ namespace Ottd3D
 		Random rnd = new Random ();
 
 			
-		void addRandomTrees(Tetra.IndexedVAO<Tetra.VAOInstancedData> vao, int count, string objPath, string diffTexPath, float _scale=1f)
+		void addRandomTrees(VertexArrayObject<MeshData, VAOInstancedData> vao,
+			int count, string objPath, string diffTexPath, float _scale=1f)
 		{			
-			Tetra.VAOItem<Tetra.VAOInstancedData> vaoi = vao.Add (Tetra.OBJMeshLoader.Load (objPath));
+			VAOItem<VAOInstancedData> vaoi = (VAOItem<VAOInstancedData>)vao.Add (OBJMeshLoader.Load (objPath));
 			vaoi.DiffuseTexture = Tetra.Texture.Load(diffTexPath);
-			vaoi.Datas = new Tetra.VAOInstancedData[count];
+			vaoi.InstancedDatas = new Tetra.VAOInstancedData[count];
 			for (int i = 0; i < count; i++) {				
 				Vector2 pos = new Vector2 ((float)rnd.NextDouble() * terrain.GridSize, (float)rnd.NextDouble() * terrain.GridSize);
 				float scale = (float)(rnd.NextDouble () * 0.002f + 0.004f)*_scale;
-				vaoi.Datas[i].modelMats =Matrix4.CreateRotationX (MathHelper.PiOver2) * Matrix4.CreateScale (scale)* Matrix4.CreateTranslation(pos.X, pos.Y, 0f);
+				vaoi.InstancedDatas[i].modelMats =Matrix4.CreateRotationX (MathHelper.PiOver2) * Matrix4.CreateScale (scale)* Matrix4.CreateTranslation(pos.X, pos.Y, 0f);
 			}
 			vaoi.UpdateInstancesData ();			
 		}
@@ -500,12 +489,12 @@ namespace Ottd3D
 		void depthSortThread()
 		{
 			try {
-				Tetra.VAOItem<Tetra.VAOInstancedData>[] transObjs = null;
+				VAOItem[] transObjs = null;
 				lock (transparentItemsVao.Meshes) {
 					transObjs = transparentItemsVao.Meshes.ToArray();
 				}
-				foreach (Tetra.VAOItem<Tetra.VAOInstancedData> item in transObjs) {
-					depthSort (item.Datas);	
+				foreach (VAOItem<VAOInstancedData> item in transObjs.OfType<VAOItem<VAOInstancedData>>()) {
+					depthSort (item.InstancedDatas);	
 				}
 
 			} catch {
@@ -564,7 +553,11 @@ namespace Ottd3D
 //				updateMatrices = false;
 //				gridCacheIsUpToDate = false;
 //			}
-
+			for (int i = 0; i < heoliennes.InstancedDatas.Length; i++) {
+				heoliennes.InstancedDatas [i].quat1 = Quaternion.FromEulerAngles(0f,heolAngle,0f);
+			}
+			heoliennes.UpdateInstancesData ();
+			heolAngle += MathHelper.Pi * 0.01f;
 //			if (depthSortingDone) {
 //				foreach (Tetra.VAOItem<Tetra.VAOInstancedData> item in transparentItemsVao.Meshes) 
 //					item.UpdateInstancesData();	
@@ -577,7 +570,7 @@ namespace Ottd3D
 			terrain.Update (this);
 
 		}
-
+		float heolAngle = 0f;
 		protected override void OnResize (EventArgs e)
 		{
 			base.OnResize (e);
