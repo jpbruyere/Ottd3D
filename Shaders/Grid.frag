@@ -63,7 +63,7 @@ void main(void)
 	if (sel_color.a > 0.0){
 		vec2 uv = splatTexCoord - sel_center * 0.5;
 		float dist =  sqrt(dot(uv, uv));
-		float border = sel_radius * 0.03 * sqrt(fFogCoord*0.1);
+		float border = sqrt(fFogCoord)*0.00005;
 		selCoef = 1.0 + smoothstep(sel_radius, sel_radius + border, dist) 
 			            - smoothstep(sel_radius - border, sel_radius, dist);		
 	}

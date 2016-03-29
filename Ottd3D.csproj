@@ -97,7 +97,6 @@
     <Compile Include="lib\GOLib\OTKCrow\OpenGL\VertexArrayObject.cs">
       <Link>VertexArrayObject.cs</Link>
     </Compile>
-    <Compile Include="Ottd3DMapEditor.cs" />
     <Compile Include="Ottd3DWindow.cs" />
     <Compile Include="Terrain.cs" />
     <Compile Include="Shaders\Mat4InstancedShader.cs" />
@@ -113,8 +112,6 @@
     <Folder Include="images\skybox\" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="Shaders\Grid.frag" />
-    <EmbeddedResource Include="Shaders\VertDisp.vert" />
     <EmbeddedResource Include="images\grass_green_d.jpg" />
     <EmbeddedResource Include="images\grass_rocky_d.jpg" />
     <EmbeddedResource Include="images\grass_autumn_orn_d.jpg" />
@@ -129,9 +126,7 @@
     <EmbeddedResource Include="images\ground_cracks2v_d.jpg" />
     <EmbeddedResource Include="images\ground_cracks2y_d.jpg" />
     <EmbeddedResource Include="images\grass.jpg" />
-    <EmbeddedResource Include="Shaders\brush.frag" />
     <EmbeddedResource Include="ui\BrushImageItem.goml" />
-    <EmbeddedResource Include="Shaders\hmBrush.frag" />
     <EmbeddedResource Include="images\grass2.jpg" />
     <EmbeddedResource Include="images\brownRock.jpg" />
     <EmbeddedResource Include="ui\heightEditionMenu.goml" />
@@ -146,6 +141,7 @@
     <EmbeddedResource Include="ui\fps.crow" />
     <EmbeddedResource Include="ui\tmpWindow.crow" />
     <EmbeddedResource Include="ui\menu.crow" />
+    <EmbeddedResource Include="ui\ShaderEditor.crow" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="lib\GGL\GGL.csproj">
@@ -207,6 +203,31 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="Meshes\heolienne.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Meshes\heolienne_lod0.obj">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Meshes\heollow.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Shaders\Grid.frag">
+      <LogicalName>Ottd3D.Shaders.Grid.frag</LogicalName>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Shaders\VertDisp.vert">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Shaders\brush.frag">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Shaders\hmBrush.frag">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Shaders\objects.vert">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Shaders\objects.frag">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>

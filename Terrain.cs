@@ -226,7 +226,7 @@ namespace Ottd3D
 		BrushShader	hmGenerator,
 					splattingBrushShader;
 
-		Ottd3D.VertexDispShader gridShader;
+		public Ottd3D.VertexDispShader gridShader;
 		Tetra.Shader cacheShader;
 
 		void draw(){
@@ -241,20 +241,28 @@ namespace Ottd3D
 			//4th component of selection texture is used as coordinate, not as alpha
 			GL.Disable (EnableCap.AlphaTest);
 			GL.Disable (EnableCap.Blend);
+			GL.Enable (EnableCap.CullFace);
+			GL.CullFace (CullFaceMode.Back);
 
 			if (wireframe)				
 				gridMesh.Render(PrimitiveType.LineStrip);
 			else
 				gridMesh.Render(PrimitiveType.TriangleStrip);
+			GL.Disable (EnableCap.CullFace);
 		}
 		void initShaders(){
 			gridShader = new Ottd3D.VertexDispShader 
-				("Ottd3D.Shaders.VertDisp.vert", "Ottd3D.Shaders.Grid.frag");
+				("Shaders/VertDisp.vert", "Shaders/Grid.frag");
 			
 			gridShader.MapSize = new Vector2 (_gridSize, _gridSize);
 			gridShader.HeightScale = heightScale;
 
 			initGridMaps ();
+
+			hmGenerator = new BrushShader (null,"Shaders/hmBrush.frag",_hmSize, _hmSize, gridShader.DisplacementMap);
+			splattingBrushShader = new BrushShader (null,"Shaders/brush.frag", _splatingSize, _splatingSize, gridShader.SplatTexture);
+
+			Tetra.Texture.ResetToDefaultLoadingParams ();
 
 			cacheShader = new Tetra.Shader();			
 		}
@@ -284,14 +292,7 @@ namespace Ottd3D
 				} catch{
 					gridShader.SplatTexture = new Tetra.Texture (_splatingSize, _splatingSize);
 				}
-
 			}
-
-
-			hmGenerator = new BrushShader ("Ottd3D.Shaders.hmBrush",_hmSize, _hmSize, gridShader.DisplacementMap);
-			splattingBrushShader = new BrushShader ("Ottd3D.Shaders.brush", _splatingSize, _splatingSize, gridShader.SplatTexture);
-
-			Tetra.Texture.ResetToDefaultLoadingParams ();
 		}
 		void initGrid()
 		{
@@ -312,8 +313,8 @@ namespace Ottd3D
 					texVboData [_gridSize * y + x] = new Vector2 ((float)x*0.5f, (float)y*0.5f);
 
 					if (y < _gridSize-1) {
-						indicesVboData [(_gridSize * 2 + 1) * y + x*2] = _gridSize * y + x;
-						indicesVboData [(_gridSize * 2 + 1) * y + x*2 + 1] = _gridSize * (y+1) + x;
+						indicesVboData [(_gridSize * 2 + 1) * y + x*2+ 1] = _gridSize * y + x;
+						indicesVboData [(_gridSize * 2 + 1) * y + x*2] = _gridSize * (y+1) + x;
 					}
 
 					if (x == _gridSize-1) {

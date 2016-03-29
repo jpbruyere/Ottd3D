@@ -55,12 +55,19 @@ void main(void)
 		pos[i] = vec3(xy, h);
 	}
 
+	/*
 	n = (Normal * vec4 (normalize(
 		normalize(cross(pos[2] - pos[0], pos[1] - pos[0]))
 	  + normalize(cross(pos[3] - pos[0], pos[2] - pos[0])) 
 	  + normalize(cross(pos[4] - pos[0], pos[3] - pos[2])) 
-	  + normalize(cross(pos[1] - pos[0], pos[4] - pos[2])) / 4.0), 0.0)).xyz;
+	  + normalize(cross(pos[1] - pos[0], pos[4] - pos[2])) / 4.0), 0.0)).xyz;*/
 
+	vec3 va = normalize( vec3(1.0, 0.0, pos[2].z - pos[0].z) );
+	vec3 vb = normalize( vec3(0.0, 1.0, pos[1].z - pos[0].z) );
+
+	n = normalize( cross(va, vb) );
+
+	  n = (Normal * vec4(n,0)).xyz;
 	vEyeSpacePos = ModelView *  vec4(pos[0], 1);
 	vertex = vec4((pos[0].xy) / (mapSize-vec2(1.0,1.0)), pos[0].z / heightScale, 1.0);
 	gl_Position = Projection * vEyeSpacePos;

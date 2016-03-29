@@ -21,8 +21,15 @@ using Tetra.DynamicShading;
 
 namespace Ottd3D
 {
-	public class Ottd3DWindow : OpenTKGameWindow
+	public class Ottd3DWindow : OpenTKGameWindow, IBindable
 	{
+		#region IBindable implementation
+		List<Binding> bindings = new List<Binding> ();
+		public List<Binding> Bindings {
+			get { return bindings; }
+		}
+		#endregion
+
 		public enum GameState
 		{
 			Playing,
@@ -54,7 +61,7 @@ namespace Ottd3D
 				tmp.fogColor = new Vector4(0.7f,0.7f,0.7f,1.0f);
 				tmp.fStart = 100.0f; // This is only for linear fog
 				tmp.fEnd = 300.0f; // This is only for linear fog
-				tmp.fDensity = 0.005f; // For exp and exp2 equation   
+				tmp.fDensity = 0.001f; // For exp and exp2 equation   
 				tmp.iEquation = 1; // 0 = linear, 1 = exp, 2 = exp2
 				return tmp;
 			}
@@ -89,7 +96,7 @@ namespace Ottd3D
 		float ZoomSpeed = 10.0f;
 		float RotationSpeed = 0.005f;
 
-		public Vector4 vLight = new Vector4 (0.5f, 0.5f, -1, 0);
+		public Vector4 vLight = new Vector4 (0.5f, 0.5f, -0.5f, 0f);
 
 		UBOSharedData shaderSharedData;
 		UBOFogData fogData;
@@ -98,6 +105,16 @@ namespace Ottd3D
 
 		public Vector2 MousePos {
 			get { return new Vector2 (Mouse.X, Mouse.Y); }
+		}
+		string shaderSource;
+		public string ShaderSource {
+			get { return shaderSource; }
+			set {
+				if (string.Equals (value, shaderSource, StringComparison.Ordinal))
+					return;
+				shaderSource = value;
+				NotifyValueChanged ("ShaderSource", shaderSource);
+			}
 		}
 
 		VertexArrayObject<WeightedMeshData, WeightedInstancedData> landItemsVao, transparentItemsVao;
@@ -114,9 +131,9 @@ namespace Ottd3D
 			GL.Enable (EnableCap.Blend);
 			GL.BlendFunc(BlendingFactorSrc.SrcAlpha, BlendingFactorDest.OneMinusSrcAlpha);
 		}
-		VAOItem<WeightedInstancedData> heoliennes;
+		VAOItem<WeightedInstancedData> heoliennes, heollow;
 		void initScene(){
-			const int nbHeol = 5;
+			int nbHeol = 5;
 			terrain = new Terrain (ClientRectangle.Size);
 			landItemsVao = new VertexArrayObject<WeightedMeshData, WeightedInstancedData> ();
 			//HEOLIENNES
@@ -136,6 +153,24 @@ namespace Ottd3D
 				heoliennes.InstancedDatas [i].bpos3 = new Vector4 (0f, 0f, 0f, 0f);
 			}
 			heoliennes.UpdateInstancesData();
+			nbHeol = 5;
+			heollow = (VAOItem<WeightedInstancedData>)landItemsVao.Add (OBJMeshLoader.Load ("Meshes/heolienne_lod0.obj"));
+			heollow.DiffuseTexture = Tetra.Texture.Load ("Meshes/heollow.png");
+			heollow.InstancedDatas = new Tetra.WeightedInstancedData[nbHeol];
+			for (int i = 0; i < nbHeol; i++) {
+				Vector2 pos = new Vector2 ((float)rnd.Next(0,terrain.GridSize), (float)rnd.Next(0,terrain.GridSize));
+				heollow.InstancedDatas[i].modelMats = Matrix4.CreateTranslation (pos.X-(pos.X % 4f) + 0.5f, pos.Y-(pos.Y % 4f) + 0.5f, 0f);
+				heollow.InstancedDatas [i].quat0 = Quaternion.Identity;
+				heollow.InstancedDatas [i].quat1 = Quaternion.Identity;
+				heollow.InstancedDatas [i].quat2 = Quaternion.Identity;
+				heollow.InstancedDatas [i].quat3 = Quaternion.Identity;
+				heollow.InstancedDatas [i].bpos0 = new Vector4 (0f, 0f, 0f, 0f);
+				heollow.InstancedDatas [i].bpos1 = new Vector4 (0f, 0f, 10f, 0f);
+				heollow.InstancedDatas [i].bpos2 = new Vector4 (0f, 0f, 0f, 0f);
+				heollow.InstancedDatas [i].bpos3 = new Vector4 (0f, 0f, 0f, 0f);
+			}
+			heollow.UpdateInstancesData();
+
 
 			//landItemsVao.ComputeTangents();
 			landItemsVao.BuildBuffers ();
@@ -234,7 +269,7 @@ namespace Ottd3D
 
 		void initShaders()
 		{
-			objShader = new Mat4InstancedShader ();
+			objShader = new Mat4InstancedShader ("Shaders/objects.vert", "Shaders/objects.frag");
 
 			//objShader.DiffuseTexture = heolienneTex;
 
@@ -311,6 +346,11 @@ namespace Ottd3D
 			Crow.CompilerServices.ResolveBindings (terrain.Bindings);
 
 			CrowInterface.LoadInterface("#Ottd3D.ui.menu.crow").DataSource = this;
+			CrowInterface.LoadInterface("#Ottd3D.ui.ShaderEditor.crow").DataSource = this;
+
+			Crow.CompilerServices.ResolveBindings (this.Bindings);
+
+			ShaderSource = terrain.gridShader.fragSource;
 		}
 			
 		#region Mouse
@@ -457,6 +497,10 @@ namespace Ottd3D
 				break;
 			}
 		}
+		void onApplyShader (object sender, EventArgs e){
+			terrain.gridShader.fragSource = ShaderSource;
+			terrain.gridShader.Compile ();
+		}
 		#endregion
 
 		Random rnd = new Random ();
@@ -554,10 +598,16 @@ namespace Ottd3D
 //				gridCacheIsUpToDate = false;
 //			}
 			for (int i = 0; i < heoliennes.InstancedDatas.Length; i++) {
-				heoliennes.InstancedDatas [i].quat1 = Quaternion.FromEulerAngles(0f,heolAngle,0f);
+				heoliennes.InstancedDatas [i].quat0 = Quaternion.FromEulerAngles(heolAngle*0.1f,0f,0f);
+				heoliennes.InstancedDatas [i].quat1 = Quaternion.FromEulerAngles(0f,heolAngle,0f) * heoliennes.InstancedDatas [i].quat0;
 			}
 			heoliennes.UpdateInstancesData ();
-			heolAngle += MathHelper.Pi * 0.01f;
+
+			for (int i = 0; i < heollow.InstancedDatas.Length; i++) {
+				heollow.InstancedDatas [i].quat1 = Quaternion.FromEulerAngles(0f,heolAngle,0f);
+			}
+			heollow.UpdateInstancesData ();
+			heolAngle += MathHelper.Pi * 0.007f;
 //			if (depthSortingDone) {
 //				foreach (Tetra.VAOItem<Tetra.VAOInstancedData> item in transparentItemsVao.Meshes) 
 //					item.UpdateInstancesData();	

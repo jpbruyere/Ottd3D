@@ -1,0 +1,16 @@
+﻿<?xml version="1.0"?>
+<Window Font="droid bold, 10" Title="GLSL Editor" Width="600" Height="400"
+	Template="#Ottd3D.ui.tmpWindow.crow" Top="100">
+	<VerticalStack Margin="2">
+		<HorizontalStack Height="-1" Background="vgradient|0:DimGray|1:Black">
+			<Button Caption="Open"/>
+			<Button Caption="Save"/>
+			<Button Caption="Apply" MouseClick="onApplyShader"/>
+		</HorizontalStack>
+		<Scroller VerticalScrolling="true">
+			<TextBox Name="source" VerticalAlignment="Top" Font="mono, 12" TextAlignment="TopLeft"
+				Width="0" Height="-1"
+				Text="{²ShaderSource}" Multiline="true"/>
+		</Scroller>
+	</VerticalStack>
+</Window>

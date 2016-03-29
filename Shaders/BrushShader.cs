@@ -29,8 +29,8 @@ namespace Ottd3D
 	public class BrushShader : CircleShader
 	{
 		#region CTOR
-		public BrushShader (string effectId, int _width = -1, int _height = -1, int initTexture = 0)
-			:base(effectId, _width, _height, initTexture)
+		public BrushShader (string vertResPath, string fragResPath = null, int _width = -1, int _height = -1, int initTexture = 0)
+			:base(vertResPath, fragResPath, _width, _height, initTexture)
 		{			
 			clear = false;
 		}

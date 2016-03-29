@@ -24,6 +24,7 @@ using System.Collections.Generic;
 using OpenTK;
 using OpenTK.Graphics.OpenGL;
 using System.Linq;
+using Tetra.DynamicShading;
 
 namespace Ottd3D
 {
@@ -32,7 +33,7 @@ namespace Ottd3D
 		const int resolution = 20;
 
 		vaoMesh trackMesh;
-		Tetra.IndexedVAO trackVao;
+		//public static VertexArrayObject<MeshData> trackVao;
 
 		public List<TrackSegment> TrackStarts = new List<TrackSegment>();
 		public TrackSegment CurrentSegment = null;
