@@ -150,7 +150,7 @@ namespace test
 		}
 
 		void updateShadersMatrices(){
-			shader.MVP = modelview * projection;
+			//shader.Uniforms["mvp"] = modelview * projection;
 
 			shaderSharedData.projection = projection;
 			shaderSharedData.view = modelview;
