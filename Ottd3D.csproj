@@ -10,7 +10,7 @@
     <DefineConstants>__linux__</DefineConstants>
     <RootNamespace>Ottd3D</RootNamespace>
     <AssemblyName>Tests</AssemblyName>
-    <StartupObject>Ottd3D.Ottd3DWindow</StartupObject>
+    <StartupObject>test.TestDynShader</StartupObject>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <OutputPath>$(SolutionDir)/build/$(Configuration)</OutputPath>
     <IntermediateOutputPath>$(SolutionDir)/build/obj/$(Configuration)</IntermediateOutputPath>
@@ -102,6 +102,7 @@
     <Compile Include="Shaders\Mat4InstancedShader.cs" />
     <Compile Include="Shaders\CacheRenderingShader.cs" />
     <Compile Include="Shaders\CircleShader.cs" />
+    <Compile Include="TestDynShader.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="ui\" />
@@ -228,6 +229,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="Shaders\objects.frag">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="images\test.jpg">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
