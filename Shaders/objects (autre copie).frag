@@ -15,6 +15,7 @@ layout (std140) uniform fogData
 
 uniform sampler2D tex;
 uniform sampler2D normal;
+uniform sampler2D depth;
 
 layout (std140) uniform block_data{
 	mat4 Projection;
@@ -66,37 +67,21 @@ const vec3 specular = vec3(0.0,0.0,0.0);
 const float shininess = 1.0;
 const float screenGamma = 1.0;
 
+const float zFar=512.0;
+const float zNear = 0.1;
+
 void main(void)
 {
+	float z_b = texture(depth, gl_FragCoord.xy / vec2(1024.0,800.0)).r;
+    float z_n = 2.0 * z_b - 1.0;
+    float z_e = 2.0 * zNear * zFar / (zFar + zNear - z_n * (zFar - zNear));
+    float z = gl_FragCoord.z/gl_FragCoord.w;
 
-	vec4 diffTex = texture( tex, texCoord) * Color;
-	if (diffTex.a == 0.0)
-		discard;
-	vec3 vLight;
-	vec3 vEye = normalize(-vEyeSpacePos.xyz);
+    if (z_e < gl_FragCoord.w)
+    	discard;
+	//if (d==0.01)
+	//	discard;
 
-	if (lightPos.w == 0.0)
-		vLight = normalize(-lightPos.xyz);
-	else
-		vLight = normalize(lightPos.xyz - vEyeSpacePos.xyz);
+	out_frag_color = vec4(1.0,0.0,0.0,1.0);//texture( tex, texCoord) * Color;
 
-	//blinn phong
-	vec3 halfDir = normalize(vLight + vEye);
-	float specAngle = max(dot(halfDir, n), 0.0);
-	vec3 Ispec = specular * pow(specAngle, shininess);
-	vec3 Idiff = diffuse * max(dot(n,vLight), 0.0);
-
-	float fFogCoord = abs(vEyeSpacePos.z/vEyeSpacePos.w);
-
-	vec3 colorLinear = diffTex.rgb + diffTex.rgb * (ambient + Idiff) + Ispec;
-//				out_frag_color = vec4(colorLinear, diffTex.a);
-	vec4 gcc = vec4(pow(colorLinear, vec3(1.0/screenGamma)), diffTex.a);
-	out_frag_color = mix(gcc , fogColor, getFogFactor(fFogCoord));
-
-	/*
-	out_frag_color = vec4( 
-		mix(diffTex.rgb * Idiff , fogColor.rgb, getFogFactor(fFogCoord)),diffTex.a);
-
-	out_frag_color = vec4(diffTex.rgb * Idiff , diffTex.a)*fogColor;
-	*/
 }

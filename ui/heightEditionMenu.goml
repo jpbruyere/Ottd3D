@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0"?>
-<Window Font="droid bold, 10" Title="Height Map" Width="120" Height="400"
+<Window Font="droid bold, 10" Title="Height Map" Width="100" Height="100"
 	Template="#Ottd3D.ui.tmpWindow.crow"
-	HorizontalAlignment="Left" Top="10">
+	HorizontalAlignment="Right" Top="300">
 	<VerticalStack Height="0" Width="0" Spacing="5" Margin="2">
 		<Button Caption="Clear" MouseClick="onClearHM"/>
 		<Button Caption="Save" MouseClick="onSave"/>

@@ -10,7 +10,7 @@
     <DefineConstants>__linux__</DefineConstants>
     <RootNamespace>Ottd3D</RootNamespace>
     <AssemblyName>Tests</AssemblyName>
-    <StartupObject>test.TestDynShader</StartupObject>
+    <StartupObject>Ottd3D.Ottd3DWindow</StartupObject>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <OutputPath>$(SolutionDir)/build/$(Configuration)</OutputPath>
     <IntermediateOutputPath>$(SolutionDir)/build/obj/$(Configuration)</IntermediateOutputPath>
@@ -111,6 +111,7 @@
     <Folder Include="Meshes\" />
     <Folder Include="images\trees\" />
     <Folder Include="images\skybox\" />
+    <Folder Include="Meshes\trees\" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="images\grass_green_d.jpg" />
@@ -143,6 +144,7 @@
     <EmbeddedResource Include="ui\tmpWindow.crow" />
     <EmbeddedResource Include="ui\menu.crow" />
     <EmbeddedResource Include="ui\ShaderEditor.crow" />
+    <EmbeddedResource Include="ui\imgView.crow" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="lib\GGL\GGL.csproj">
@@ -232,6 +234,33 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="images\test.jpg">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Meshes\pawn.obj">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Meshes\pawn.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Meshes\trees\treesLeaves.obj">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Meshes\trees\treesTrunk.obj">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Meshes\trees\treeLeaves.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Meshes\trees\treeTrunk.jpg">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Shaders\objects %28copier%29.frag">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Shaders\objects %28autre copie%29.frag">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Shaders\cache.frag">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>

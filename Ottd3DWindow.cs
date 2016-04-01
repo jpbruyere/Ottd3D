@@ -86,8 +86,8 @@ namespace Ottd3D
 		}
 		public Vector3 vEyeTarget = new Vector3(32, 32, 0f);
 		public Vector3 vLook = Vector3.Normalize(new Vector3(-1f, -1f, 1f));  // Camera vLook Vector
-		public float zFar = 512.0f;
-		public float zNear = 0.1f;
+		public float zFar = 400.0f;
+		public float zNear = 1.0f;
 		public float fovY = (float)Math.PI / 4;
 
 		float eyeDist = 100;
@@ -131,12 +131,38 @@ namespace Ottd3D
 			GL.Enable (EnableCap.Blend);
 			GL.BlendFunc(BlendingFactorSrc.SrcAlpha, BlendingFactorDest.OneMinusSrcAlpha);
 		}
-		VAOItem<WeightedInstancedData> heoliennes, heollow;
+		float[] heolBones = new float[12];
+		float[] pawnBones = new float[12];
+
+		VAOItem<WeightedInstancedData> heoliennes, heollow, pawn, trees, treesLeave;
+
 		void initScene(){
+			heolBones[5] = 10f;
+			pawnBones [2] = 0.299f;
+			pawnBones [5] = 0.90812f;
+
 			int nbHeol = 5;
 			terrain = new Terrain (ClientRectangle.Size);
 			landItemsVao = new VertexArrayObject<WeightedMeshData, WeightedInstancedData> ();
+
+			nbHeol = 50;
+			trees = (VAOItem<WeightedInstancedData>)landItemsVao.Add (OBJMeshLoader.Load ("Meshes/trees/treesTrunk.obj"));
+			treesLeave = (VAOItem<WeightedInstancedData>)landItemsVao.Add (OBJMeshLoader.Load ("Meshes/trees/treesLeaves.obj"));
+			trees.DiffuseTexture = Tetra.Texture.Load ("Meshes/trees/treeTrunk.jpg");
+			treesLeave.DiffuseTexture = Tetra.Texture.Load ("Meshes/trees/treeLeaves.png");
+			trees.InstancedDatas = new Tetra.WeightedInstancedData[nbHeol];
+			treesLeave.InstancedDatas = new Tetra.WeightedInstancedData[nbHeol];
+			for (int i = 0; i < nbHeol; i++) {
+				Vector2 pos = new Vector2 ((float)rnd.Next(0,terrain.GridSize), (float)rnd.Next(0,terrain.GridSize));
+				float angle = (float)(rnd.NextDouble() * Math.PI);
+				trees.InstancedDatas[i].modelMats = Matrix4.CreateRotationZ(angle) * Matrix4.CreateScale(4f) * Matrix4.CreateTranslation (pos.X-(pos.X % 4f) + 0.5f, pos.Y-(pos.Y % 4f) + 0.5f, 0f);
+				treesLeave.InstancedDatas [i].modelMats = trees.InstancedDatas [i].modelMats;
+			}
+			trees.UpdateInstancesData();
+
+			treesLeave.UpdateInstancesData();
 			//HEOLIENNES
+			nbHeol = 5;
 			heoliennes = (VAOItem<WeightedInstancedData>)landItemsVao.Add (OBJMeshLoader.Load ("Meshes/heolienne.obj"));
 			heoliennes.DiffuseTexture = Tetra.Texture.Load ("Meshes/heolienne.png");
 			heoliennes.InstancedDatas = new Tetra.WeightedInstancedData[nbHeol];
@@ -147,10 +173,10 @@ namespace Ottd3D
 				heoliennes.InstancedDatas [i].quat1 = Quaternion.Identity;
 				heoliennes.InstancedDatas [i].quat2 = Quaternion.Identity;
 				heoliennes.InstancedDatas [i].quat3 = Quaternion.Identity;
-				heoliennes.InstancedDatas [i].bpos0 = new Vector4 (0f, 0f, 0f, 0f);
-				heoliennes.InstancedDatas [i].bpos1 = new Vector4 (0f, 0f, 10f, 0f);
-				heoliennes.InstancedDatas [i].bpos2 = new Vector4 (0f, 0f, 0f, 0f);
-				heoliennes.InstancedDatas [i].bpos3 = new Vector4 (0f, 0f, 0f, 0f);
+//				heoliennes.InstancedDatas [i].bpos0 = new Vector4 (0f, 0f, 0f, 0f);
+//				heoliennes.InstancedDatas [i].bpos1 = new Vector4 (0f, 0f, 0f, 0f);
+//				heoliennes.InstancedDatas [i].bpos2 = new Vector4 (0f, 0f, 0f, 0f);
+//				heoliennes.InstancedDatas [i].bpos3 = new Vector4 (0f, 0f, 0f, 0f);
 			}
 			heoliennes.UpdateInstancesData();
 			nbHeol = 5;
@@ -164,13 +190,25 @@ namespace Ottd3D
 				heollow.InstancedDatas [i].quat1 = Quaternion.Identity;
 				heollow.InstancedDatas [i].quat2 = Quaternion.Identity;
 				heollow.InstancedDatas [i].quat3 = Quaternion.Identity;
-				heollow.InstancedDatas [i].bpos0 = new Vector4 (0f, 0f, 0f, 0f);
-				heollow.InstancedDatas [i].bpos1 = new Vector4 (0f, 0f, 10f, 0f);
-				heollow.InstancedDatas [i].bpos2 = new Vector4 (0f, 0f, 0f, 0f);
-				heollow.InstancedDatas [i].bpos3 = new Vector4 (0f, 0f, 0f, 0f);
+//				heollow.InstancedDatas [i].bpos0 = new Vector4 (0f, 0f, 0f, 0f);
+//				heollow.InstancedDatas [i].bpos1 = new Vector4 (0f, 0f, 0f, 0f);
+//				heollow.InstancedDatas [i].bpos2 = new Vector4 (0f, 0f, 0f, 0f);
+//				heollow.InstancedDatas [i].bpos3 = new Vector4 (0f, 0f, 0f, 0f);
 			}
 			heollow.UpdateInstancesData();
 
+			pawn = (VAOItem<WeightedInstancedData>)landItemsVao.Add (OBJMeshLoader.Load ("Meshes/pawn.obj"));
+			pawn.DiffuseTexture = Tetra.Texture.Load ("Meshes/pawn.png");
+			pawn.InstancedDatas = new Tetra.WeightedInstancedData[nbHeol];
+			for (int i = 0; i < nbHeol; i++) {
+				Vector2 pos = new Vector2 ((float)rnd.Next(0,terrain.GridSize), (float)rnd.Next(0,terrain.GridSize));
+				pawn.InstancedDatas[i].modelMats = Matrix4.CreateTranslation (pos.X-(pos.X % 4f) + 0.5f, pos.Y-(pos.Y % 4f) + 0.5f, 0f);
+				pawn.InstancedDatas [i].quat0 = Quaternion.Identity;
+				pawn.InstancedDatas [i].quat1 = Quaternion.Identity;
+				pawn.InstancedDatas [i].quat2 = Quaternion.Identity;
+				pawn.InstancedDatas [i].quat3 = Quaternion.Identity;
+			}
+			pawn.UpdateInstancesData();
 
 			//landItemsVao.ComputeTangents();
 			landItemsVao.BuildBuffers ();
@@ -217,13 +255,22 @@ namespace Ottd3D
 
 		}
 		void drawScene(){
+			GL.Enable (EnableCap.DepthTest);
 			terrain.Render ();
 
 //			GL.Disable (EnableCap.Blend);
 			objShader.Enable ();
+			GL.DepthFunc (DepthFunction.Lequal);
+
+
 
 			landItemsVao.Bind ();
-			landItemsVao.Render (PrimitiveType.Triangles);
+//			landItemsVao.Render (PrimitiveType.Triangles, trees);
+//			landItemsVao.Render (PrimitiveType.Triangles, treesLeave);
+			objShader.SetBones (heolBones);
+			landItemsVao.Render (PrimitiveType.Triangles, heoliennes);
+			objShader.SetBones (pawnBones);
+			landItemsVao.Render (PrimitiveType.Triangles, pawn);
 			landItemsVao.Unbind ();
 
 
@@ -347,10 +394,43 @@ namespace Ottd3D
 
 			CrowInterface.LoadInterface("#Ottd3D.ui.menu.crow").DataSource = this;
 			CrowInterface.LoadInterface("#Ottd3D.ui.ShaderEditor.crow").DataSource = this;
+			CrowInterface.LoadInterface("#Ottd3D.ui.imgView.crow").DataSource = this;
+
+			viewedTexture = terrain.gridDepthTex;
 
 			Crow.CompilerServices.ResolveBindings (this.Bindings);
 
-			ShaderSource = terrain.gridShader.fragSource;
+			editedShader = terrain.gridShader;
+			ShaderSource = editedShader.vertSource;
+
+			queryTextureViewerUpdate = true;
+		}
+
+		Tetra.Shader editedShader;
+
+		string viewedImgPath = @"tmp.png";
+		int viewedTexture;
+		volatile bool queryTextureViewerUpdate = false;
+		volatile bool autoUpdate = false;
+
+		public bool AutoUpdate {
+			get { return autoUpdate; }
+			set {
+				if (value == autoUpdate)
+					return;	
+				autoUpdate = value;
+				NotifyValueChanged ("AutoUpdate", autoUpdate);
+			}
+		}
+
+		public string ViewedImgPath {
+			get {
+				return viewedImgPath;
+			}
+			set {
+				viewedImgPath = value;
+				NotifyValueChanged ("ViewedImgPath", viewedImgPath);
+			}
 		}
 			
 		#region Mouse
@@ -481,7 +561,34 @@ namespace Ottd3D
 			}
 		}
 		#endregion
-
+		void onSelectViewedTex (object sender, EventArgs e)
+		{
+			GraphicObject g = sender as GraphicObject;
+			switch (g.Name) {
+			case "HM":
+				viewedTexture = terrain.hmGenerator.OutputTex;
+				break;
+			case "ST":
+				viewedTexture = terrain.splattingBrushShader.OutputTex;
+				break;
+			case "CD":
+				viewedTexture = terrain.gridDepthTex;
+				break;
+			case "CC":
+				viewedTexture = terrain.gridCacheTex;
+				break;
+			case "CS":
+				viewedTexture = terrain.gridSelectionTex;
+				break;
+			case "BBC":
+				viewedTexture = -1;
+				break;
+			case "BBD":
+				viewedTexture = -2;
+				break;
+			}
+			queryTextureViewerUpdate = true;
+		}
 		void onGameStateChange (object sender, EventArgs e)
 		{
 			GraphicObject g = sender as GraphicObject;
@@ -497,9 +604,12 @@ namespace Ottd3D
 				break;
 			}
 		}
+		void onReloadImg (object sender, EventArgs e){
+			queryTextureViewerUpdate = true;
+		}
 		void onApplyShader (object sender, EventArgs e){
-			terrain.gridShader.fragSource = ShaderSource;
-			terrain.gridShader.Compile ();
+			editedShader.vertSource = ShaderSource;
+			editedShader.Compile ();
 		}
 		#endregion
 
@@ -569,8 +679,13 @@ namespace Ottd3D
 
 			initInterface ();
 		}
+		uint frameCpt;
 		protected override void OnUpdateFrame (FrameEventArgs e)
 		{
+			frameCpt++;
+			if (frameCpt == uint.MaxValue)
+				frameCpt = 0;
+			
 			base.OnUpdateFrame (e);
 
 			if (Keyboard [OpenTK.Input.Key.ShiftLeft]) {
@@ -597,17 +712,35 @@ namespace Ottd3D
 //				updateMatrices = false;
 //				gridCacheIsUpToDate = false;
 //			}
+			DualQuaternion dq = new DualQuaternion(Quaternion.FromEulerAngles(0f,heolAngle,0f),new Vector3(0f,0f,0f));
 			for (int i = 0; i < heoliennes.InstancedDatas.Length; i++) {
-				heoliennes.InstancedDatas [i].quat0 = Quaternion.FromEulerAngles(heolAngle*0.1f,0f,0f);
-				heoliennes.InstancedDatas [i].quat1 = Quaternion.FromEulerAngles(0f,heolAngle,0f) * heoliennes.InstancedDatas [i].quat0;
+				heoliennes.InstancedDatas [i].quat0 = new DualQuaternion(Quaternion.FromEulerAngles(heolAngle*0.2f,0f,0f),new Vector3(0f,0f,0f)).m_real;
+				heoliennes.InstancedDatas [i].bpos1 = dq.m_dual;
+				heoliennes.InstancedDatas [i].quat1 = heoliennes.InstancedDatas [i].quat0*dq.m_real;
 			}
 			heoliennes.UpdateInstancesData ();
 
 			for (int i = 0; i < heollow.InstancedDatas.Length; i++) {
-				heollow.InstancedDatas [i].quat1 = Quaternion.FromEulerAngles(0f,heolAngle,0f);
+				//heollow.InstancedDatas [i].bpos1 = dq.m_dual;
+				heollow.InstancedDatas [i].quat1 = dq.m_real;
 			}
 			heollow.UpdateInstancesData ();
+
+			for (int i = 0; i < pawn.InstancedDatas.Length; i++) {
+				pawn.InstancedDatas [i].quat1 = Quaternion.FromEulerAngles(pawnAngle,pawnAngle,pawnAngle);
+			}
+			pawn.UpdateInstancesData ();
+
+			pawnAngle += pawnAngleIncrement;
+
+			if (pawnAngleIncrement > 0f){
+				if (pawnAngle > pawnAngleLimit)
+					pawnAngleIncrement = -pawnAngleIncrement;
+			}else if (pawnAngle < -pawnAngleLimit)
+				pawnAngleIncrement = -pawnAngleIncrement;
+
 			heolAngle += MathHelper.Pi * 0.007f;
+
 //			if (depthSortingDone) {
 //				foreach (Tetra.VAOItem<Tetra.VAOInstancedData> item in transparentItemsVao.Meshes) 
 //					item.UpdateInstancesData();	
@@ -619,8 +752,131 @@ namespace Ottd3D
 
 			terrain.Update (this);
 
+			if (queryTextureViewerUpdate || (autoUpdate && frameCpt % 60 == 0)) {
+				queryTextureViewerUpdate = false;
+
+
+
+				if (viewedTexture < 0) {					
+					GL.ReadBuffer (ReadBufferMode.Back);
+					if (viewedTexture == -1) {
+						// save backbuffer
+						using (System.Drawing.Bitmap bmp = new System.Drawing.Bitmap (ClientSize.Width, ClientSize.Height, System.Drawing.Imaging.PixelFormat.Format32bppArgb)) {
+							System.Drawing.Imaging.BitmapData bmpData = bmp.LockBits (
+								                                            new System.Drawing.Rectangle (0, 0, ClientSize.Width, ClientSize.Height), System.Drawing.Imaging.ImageLockMode.WriteOnly, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+							GL.ReadPixels (0, 0, ClientSize.Width, ClientSize.Height, PixelFormat.Bgra, PixelType.UnsignedByte, bmpData.Scan0);
+							SwapBuffers ();
+							bmp.UnlockBits (bmpData);
+							bmp.RotateFlip (System.Drawing.RotateFlipType.RotateNoneFlipY);
+							bmp.Save (ViewedImgPath);
+						}
+					} else if (viewedTexture == -2) {
+						saveBackBufferDepth ();
+//						using (System.Drawing.Bitmap bmp = new System.Drawing.Bitmap (ClientSize.Width, ClientSize.Height, System.Drawing.Imaging.PixelFormat.Format32bppArgb)) {
+//							System.Drawing.Imaging.BitmapData bmpData = bmp.LockBits (
+//								new System.Drawing.Rectangle (0, 0, ClientSize.Width, ClientSize.Height), System.Drawing.Imaging.ImageLockMode.WriteOnly, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+//							GL.ReadPixels (0, 0, ClientSize.Width, ClientSize.Height, PixelFormat.DepthComponent, PixelType.UnsignedByte, bmpData.Scan0);
+//							SwapBuffers ();
+//							bmp.UnlockBits (bmpData);
+//							bmp.RotateFlip (System.Drawing.RotateFlipType.RotateNoneFlipY);
+//							bmp.Save (ViewedImgPath);
+//						}
+					}
+				} else {
+					saveTextureFromId (viewedTexture, viewedImgPath);
+				}
+
+				ViewedImgPath = viewedImgPath;//notify value changed
+			}
+
 		}
-		float heolAngle = 0f;
+		void saveTextureFromId(int texId, string path){
+			int depthSize, alphaSize, redSize, greenSize, blueSize;
+			int texW, texH;
+			OpenTK.Graphics.OpenGL.PixelFormat pixFormat;
+			PixelType pixType;
+			byte[] data;
+
+			GL.BindTexture (TextureTarget.Texture2D, texId);
+			GL.GetTexLevelParameter (TextureTarget.Texture2D, 0, GetTextureParameter.TextureWidth, out texW);
+			GL.GetTexLevelParameter (TextureTarget.Texture2D, 0, GetTextureParameter.TextureHeight, out texH);
+			GL.GetTexLevelParameter (TextureTarget.Texture2D, 0, GetTextureParameter.TextureDepthSize, out depthSize);
+			GL.GetTexLevelParameter (TextureTarget.Texture2D, 0, GetTextureParameter.TextureAlphaSize, out alphaSize);
+			GL.GetTexLevelParameter (TextureTarget.Texture2D, 0, GetTextureParameter.TextureRedSize, out redSize);
+			GL.GetTexLevelParameter (TextureTarget.Texture2D, 0, GetTextureParameter.TextureGreenSize, out greenSize);
+			GL.GetTexLevelParameter (TextureTarget.Texture2D, 0, GetTextureParameter.TextureBlueSize, out blueSize);
+
+			if (depthSize > 0) {
+				pixFormat = PixelFormat.DepthComponent;
+				pixType = PixelType.Float;
+				float[] df = new float[texW* texH];
+				GL.GetTexImage (TextureTarget.Texture2D, 0, pixFormat, pixType, df);
+				GL.BindTexture (TextureTarget.Texture2D, 0);
+				data = new byte[texW * texH * 4];
+				float min = df.Min ();
+				float max = df.Max ();
+				float diff = max - min;
+				for (int i = 0; i < df.Length; i++) {
+					byte b = (byte)((df [i] - min) / diff *255f );
+					data [i * 4] = b;
+					data [i * 4 + 1] = b;
+					data [i * 4 + 2] = b;
+					data [i * 4 + 3] = 255;
+				}
+			} else {
+				pixFormat = PixelFormat.Bgra;
+				pixType = PixelType.UnsignedByte;
+				data = new byte[texW * texH * 4];
+				GL.GetTexImage (TextureTarget.Texture2D, 0, pixFormat, pixType, data);
+			}
+
+			GL.BindTexture (TextureTarget.Texture2D, 0);
+			data = imgHelpers.imgHelpers.flitY(data, 4*texW,texH);
+			Cairo.Surface bmp = new Cairo.ImageSurface(data, Cairo.Format.ARGB32, texW, texH, texW*4);
+			bmp.WriteToPng (path);
+			bmp.Dispose ();			
+		}
+		void saveBackBufferDepth()
+		{
+			int backbuffDepth, fbo;
+
+			// Create Depth Renderbuffer
+			GL.GenTextures(1, out backbuffDepth);
+			GL.BindTexture(TextureTarget.Texture2D, backbuffDepth);
+			GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.DepthComponent32f, ClientSize.Width,ClientSize.Height, 0, OpenTK.Graphics.OpenGL.PixelFormat.DepthComponent, PixelType.Float, IntPtr.Zero);
+			//			GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
+			GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Linear);
+			GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Linear);
+			GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (int)TextureWrapMode.ClampToEdge);
+			GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (int)TextureWrapMode.ClampToEdge);
+			//GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureCompareMode, (int)TextureCompareMode.CompareRToTexture);
+			//GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureCompareFunc, (int)All.Lequal);
+			//GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.DepthTextureMode, (int)All.Luminance);
+
+			GL.GenFramebuffers(1, out fbo);
+
+			GL.BindFramebuffer(FramebufferTarget.Framebuffer, fbo);
+			GL.FramebufferTexture2D(FramebufferTarget.Framebuffer, FramebufferAttachment.DepthAttachment,
+				TextureTarget.Texture2D, backbuffDepth, 0);
+			GL.DrawBuffer (DrawBufferMode.None);
+
+			if (GL.CheckFramebufferStatus(FramebufferTarget.Framebuffer) != FramebufferErrorCode.FramebufferComplete)
+			{
+				throw new Exception(GL.CheckFramebufferStatus(FramebufferTarget.Framebuffer).ToString());
+			}
+			GL.ClearColor (0f, 0f, 0f, 0f);
+			GL.Clear (ClearBufferMask.ColorBufferBit| ClearBufferMask.DepthBufferBit);
+			drawScene ();
+			SwapBuffers ();
+
+			GL.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
+
+			saveTextureFromId (backbuffDepth, viewedImgPath);
+			GL.DeleteFramebuffer (fbo);
+			GL.DeleteTexture (backbuffDepth);
+			GL.DrawBuffer (DrawBufferMode.Back);
+		}
+		float heolAngle = 0f, pawnAngle=0f, pawnAngleIncrement=0.05f, pawnAngleLimit=0.5f;
 		protected override void OnResize (EventArgs e)
 		{
 			base.OnResize (e);
@@ -650,7 +906,7 @@ namespace Ottd3D
 			}
 		}
 		public Ottd3DWindow ()
-			: base(1024, 800, 32, 24, 1, 4, "test")
+			: base(1024, 800, 32, 24, 1, 1, "test")
 		{
 			VSync = VSyncMode.Off;
 		}

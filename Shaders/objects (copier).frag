@@ -15,6 +15,7 @@ layout (std140) uniform fogData
 
 uniform sampler2D tex;
 uniform sampler2D normal;
+uniform sampler2D depth;
 
 layout (std140) uniform block_data{
 	mat4 Projection;
@@ -68,9 +69,16 @@ const float screenGamma = 1.0;
 
 void main(void)
 {
+	//ShadowCoord.z+bias)/ShadowCoord.w
+	vec4 d = texture(depth, gl_FragCoord.xy / vec2(1024.0,800.0));
 
-	vec4 diffTex = texture( tex, texCoord) * Color;
-	if (diffTex.a == 0.0)
+	//if (d==0.0)
+	//	discard;
+
+	vec4 diffTex = vec4(0.0,0.0,d.r*0.5,1.0);//texture( tex, texCoord) * Color;
+	//vec4 diffTex = texture( tex, texCoord) * Color;
+
+	if (diffTex.a < 0.2)
 		discard;
 	vec3 vLight;
 	vec3 vEye = normalize(-vEyeSpacePos.xyz);

@@ -223,24 +223,26 @@ namespace Ottd3D
 		Tetra.SkyBox skybox;
 		vaoMesh gridMesh;
 
-		BrushShader	hmGenerator,
+		public BrushShader	hmGenerator,
 					splattingBrushShader;
 
 		public Ottd3D.VertexDispShader gridShader;
 		Tetra.Shader cacheShader;
 
 		void draw(){
+			//GL.ClearDepth(1.0);
 			GL.Clear (ClearBufferMask.ColorBufferBit|ClearBufferMask.DepthBufferBit);
-
-			GL.DepthMask (false);
-			skybox.Render ();
-			GL.DepthMask (true);
+			//GL.ClearDepth(0.0);
+//			GL.DepthMask (false);
+//			skybox.Render ();
+//			GL.DepthMask (true);
 
 			gridShader.Enable ();
 
 			//4th component of selection texture is used as coordinate, not as alpha
 			GL.Disable (EnableCap.AlphaTest);
 			GL.Disable (EnableCap.Blend);
+			GL.Enable (EnableCap.DepthTest);
 			GL.Enable (EnableCap.CullFace);
 			GL.CullFace (CullFaceMode.Back);
 
@@ -264,7 +266,11 @@ namespace Ottd3D
 
 			Tetra.Texture.ResetToDefaultLoadingParams ();
 
-			cacheShader = new Tetra.Shader();			
+			cacheShader = new Tetra.Shader(null, "Shaders/cache.frag");
+			GL.UseProgram (cacheShader.pgmId);
+			GL.Uniform1(GL.GetUniformLocation (cacheShader.pgmId, "depthTex"), 1);
+			GL.UseProgram (0);
+
 		}
 		void initGridMaps(){
 
@@ -342,14 +348,14 @@ namespace Ottd3D
 		heightMapIsUpToDate = true,
 		splatTextureIsUpToDate = true;
 		QuadVAO cacheQuad;
-		int gridCacheTex,
-		gridSelectionTex;
-		int fboGrid,
-		depthRenderbuffer;
+		public int gridCacheTex,
+					gridSelectionTex;
+		public int gridDepthTex;
+		int fboGrid;
 		DrawBuffersEnum[] dbe = new DrawBuffersEnum[]
 		{
 			DrawBuffersEnum.ColorAttachment0 ,
-			DrawBuffersEnum.ColorAttachment1
+			DrawBuffersEnum.ColorAttachment1,
 		};
 
 
@@ -358,24 +364,26 @@ namespace Ottd3D
 
 			selectionMap = new byte[CacheSize.Width * CacheSize.Height*4];
 
-			cacheQuad = new QuadVAO (0, 0, CacheSize.Width, CacheSize.Height, 0, 1, 1, -1);
+			cacheQuad = new QuadVAO (0, 0, 1, 1, 0, 1, 1, -1);
 			cacheShader.MVP = Matrix4.CreateOrthographicOffCenter 
-				(0, CacheSize.Width, 0, CacheSize.Height, 0, 1);
+				(0, 1, 0, 1, 0, 1);
 
 			initGridFbo ();
 		}
 		void renderGridCache(){
 			bool depthTest = GL.GetBoolean (GetPName.DepthTest);
 
-			GL.Disable (EnableCap.DepthTest);
+			GL.Enable (EnableCap.DepthTest);
+			GL.DepthFunc (DepthFunction.Less);
 
 			cacheShader.Enable ();
 
+			GL.ActiveTexture (TextureUnit.Texture1);
+			GL.BindTexture (TextureTarget.Texture2D, gridDepthTex);
 			GL.ActiveTexture (TextureUnit.Texture0);
 			GL.BindTexture (TextureTarget.Texture2D, gridCacheTex);
 			cacheQuad.Render (PrimitiveType.TriangleStrip);
 			GL.BindTexture (TextureTarget.Texture2D, 0);
-
 			if (depthTest)
 				GL.Enable (EnableCap.DepthTest);
 		}
@@ -393,19 +401,28 @@ namespace Ottd3D
 			Tetra.Texture.ResetToDefaultLoadingParams ();
 
 			// Create Depth Renderbuffer
-			GL.GenRenderbuffers( 1, out depthRenderbuffer );
-			GL.BindRenderbuffer( RenderbufferTarget.Renderbuffer, depthRenderbuffer );
-			GL.RenderbufferStorage(RenderbufferTarget.Renderbuffer, (RenderbufferStorage)All.DepthComponent32, CacheSize.Width, CacheSize.Height);
+			GL.GenTextures(1, out gridDepthTex);
+			GL.BindTexture(TextureTarget.Texture2D, gridDepthTex);
+			GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.DepthComponent32f, CacheSize.Width, CacheSize.Height, 0, OpenTK.Graphics.OpenGL.PixelFormat.DepthComponent, PixelType.Float, IntPtr.Zero);
+//			GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
+			GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Linear);
+			GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Linear);
+			GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (int)TextureWrapMode.ClampToEdge);
+			GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (int)TextureWrapMode.ClampToEdge);
+			//GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureCompareMode, (int)TextureCompareMode.CompareRToTexture);
+			//GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureCompareFunc, (int)All.Lequal);
+			//GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.DepthTextureMode, (int)All.Luminance);
+
 
 			GL.GenFramebuffers(1, out fboGrid);
 
 			GL.BindFramebuffer(FramebufferTarget.Framebuffer, fboGrid);
+			GL.FramebufferTexture2D(FramebufferTarget.Framebuffer, FramebufferAttachment.DepthAttachment,
+				TextureTarget.Texture2D, gridDepthTex, 0);
 			GL.FramebufferTexture2D(FramebufferTarget.Framebuffer, FramebufferAttachment.ColorAttachment0,
 				TextureTarget.Texture2D, gridCacheTex, 0);
 			GL.FramebufferTexture2D(FramebufferTarget.Framebuffer, FramebufferAttachment.ColorAttachment1,
 				TextureTarget.Texture2D, gridSelectionTex, 0);
-			GL.FramebufferRenderbuffer(FramebufferTarget.Framebuffer, FramebufferAttachment.DepthAttachment, RenderbufferTarget.Renderbuffer, depthRenderbuffer );
-
 
 			if (GL.CheckFramebufferStatus(FramebufferTarget.Framebuffer) != FramebufferErrorCode.FramebufferComplete)
 			{
@@ -613,8 +630,8 @@ namespace Ottd3D
 				GL.DeleteTexture (gridCacheTex);
 			if (GL.IsTexture (gridSelectionTex))
 				GL.DeleteTexture (gridSelectionTex);
-			if (GL.IsRenderbuffer (depthRenderbuffer))
-				GL.DeleteRenderbuffer (depthRenderbuffer);
+			if (GL.IsTexture (gridDepthTex))
+				GL.DeleteTexture (gridDepthTex);
 			if (GL.IsFramebuffer (fboGrid))
 				GL.DeleteFramebuffer (fboGrid);			
 		}

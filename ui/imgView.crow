@@ -1,0 +1,28 @@
+﻿<?xml version="1.0"?>
+<Window Font="droid bold, 10" Title="Height Map" Width="400" Height="400"
+	Template="#Ottd3D.ui.tmpWindow.crow"
+	HorizontalAlignment="Left" Top="10">
+
+	<VerticalStack Margin="2">
+		<HorizontalStack Height="-1" Background="vgradient|0:DimGray|1:Black">
+			<Button Caption="Reload" MouseClick="onReloadImg"/>
+			<CheckBox Width="-1" Caption="Auto Update" IsChecked="{²AutoUpdate}"/>
+		</HorizontalStack>
+		<VerticalStack>
+			<Expandable Caption="Texture Select.." Width="200" VerticalAlignment="Top" HorizontalAlignment="Left">
+				<Container Fit="true">					
+					<VerticalStack Width="200" Background="DimGray" Margin="5">
+						<RadioButton Name="CD" IsChecked="true" Caption="Cache Depth" Checked="onSelectViewedTex"/>
+						<RadioButton Name="CC" Caption="Cache Color" Checked="onSelectViewedTex"/>
+						<RadioButton Name="CS" Caption="Selection texture" Checked="onSelectViewedTex"/>
+						<RadioButton Name="BBC" Caption="BackBuff Color" Checked="onSelectViewedTex"/>
+						<RadioButton Name="BBD" Caption="BackBuff Depth" Checked="onSelectViewedTex"/>
+						<RadioButton Name="HM" Caption="Height Map" Checked="onSelectViewedTex"/>
+						<RadioButton Name="ST" Caption="Splat texture" Checked="onSelectViewedTex"/>
+					</VerticalStack>
+				</Container>
+			</Expandable>
+			<Image Path="{ViewedImgPath}" Margin="5" Background="Black"/>
+		</VerticalStack>
+	</VerticalStack>
+</Window>

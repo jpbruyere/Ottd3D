@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0"?>
-<Window Font="droid bold, 10" Title="Splatting" Width="200" Height="400"
+<Window Font="droid bold, 10" Title="Splatting" Width="100" Height="100"
 	Template="#Ottd3D.ui.tmpWindow.crow"
-	HorizontalAlignment="Right" Top="10">
+	HorizontalAlignment="Right" Top="200">
 	<VerticalStack Height="0" Width="0" Spacing="5" Margin="2">
 		<Button Caption="Clear" MouseClick="onClearSplatting"/>
 		<HorizontalStack Fit="true">
@@ -9,7 +9,7 @@
 			<Label Font="droid bold, 10" Text="{SplatBrushPressure}"/>
 		</HorizontalStack>
 		<Slider Width="150" Height="16"
-			Minimum="1" Maximum="255"
+			Minimum="1" Maximum="20"
 			SmallIncrement="1" LargeIncrement="2"
 			Value="{²SplatBrushPressure}"/>
 		<Label Font="droid, 10" Text="1st Splat"/>

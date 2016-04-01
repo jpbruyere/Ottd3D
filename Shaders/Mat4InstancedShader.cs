@@ -11,12 +11,13 @@ namespace Ottd3D
 		public Mat4InstancedShader (string vertResPath, string fragResPath = null, string geomResPath = null)
 			: base(vertResPath, fragResPath, geomResPath){}
 
-		public int DiffuseTexture, NormalTexture;
+		public int DiffuseTexture, NormalTexture,DepthTexture;
 
 		protected override void BindSamplesSlots ()
 		{
 			base.BindSamplesSlots ();
 			GL.Uniform1(GL.GetUniformLocation (pgmId, "normal"), 1);
+			GL.Uniform1(GL.GetUniformLocation (pgmId, "depth"), 2);
 		}
 		protected override void BindVertexAttributes ()
 		{
@@ -35,14 +36,17 @@ namespace Ottd3D
 			GL.BindAttribLocation(pgmId, 14, "in_bpos2");
 			GL.BindAttribLocation(pgmId, 15, "in_bpos3");
 		}
-		int bi1, bi2;
+		int bonesLoc;
 		protected override void GetUniformLocations ()
 		{	
-			bi1 = GL.GetUniformBlockIndex (pgmId, "block_data");
-			bi2 = GL.GetUniformBlockIndex (pgmId, "fogData");
-			GL.UniformBlockBinding(pgmId, bi1, 0);
-			GL.UniformBlockBinding(pgmId, bi2, 1);
-		}	
+			GL.UniformBlockBinding(pgmId, GL.GetUniformBlockIndex (pgmId, "block_data"), 0);
+			GL.UniformBlockBinding(pgmId, GL.GetUniformBlockIndex (pgmId, "fogData"), 1);
+
+			bonesLoc = GL.GetUniformLocation (pgmId, "bones");
+		}
+		public void SetBones(float[] bones){
+			GL.Uniform3 (bonesLoc, 12, bones);
+		}
 		public override void Enable ()
 		{
 			GL.UseProgram (pgmId);
