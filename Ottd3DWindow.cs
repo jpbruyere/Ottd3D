@@ -385,16 +385,10 @@ namespace Ottd3D
 			this.MouseMove += Mouse_Move;
 			this.KeyDown += Ottd3DWindow_KeyDown;
 
-			CrowInterface.LoadInterface("#Ottd3D.ui.fps.crow").DataSource = this;
 			//LoadInterface("#Ottd3D.ui.menu.goml").DataSource = this;
 
-			CrowInterface.LoadInterface("#Ottd3D.ui.heightEditionMenu.goml").DataSource = terrain;
-			CrowInterface.LoadInterface("#Ottd3D.ui.SpattingMenu.goml").DataSource = terrain;
-			Crow.CompilerServices.ResolveBindings (terrain.Bindings);
 
 			CrowInterface.LoadInterface("#Ottd3D.ui.menu.crow").DataSource = this;
-			CrowInterface.LoadInterface("#Ottd3D.ui.ShaderEditor.crow").DataSource = this;
-			CrowInterface.LoadInterface("#Ottd3D.ui.imgView.crow").DataSource = this;
 
 			viewedTexture = terrain.gridDepthTex;
 
@@ -403,7 +397,6 @@ namespace Ottd3D
 			editedShader = terrain.gridShader;
 			ShaderSource = editedShader.vertSource;
 
-			queryTextureViewerUpdate = true;
 		}
 
 		Tetra.Shader editedShader;
@@ -561,6 +554,71 @@ namespace Ottd3D
 			}
 		}
 		#endregion
+		void onShowWindow (object sender, EventArgs e){
+			string path = "";
+			object data = this;
+			bool twoWayBinding = false;
+			CheckBox g = sender as CheckBox;
+			switch (g.Name) {
+			case "checkImgViewer":
+				path = "#Ottd3D.ui.imgView.crow";
+				queryTextureViewerUpdate = true;
+				break;
+			case "checkSplatting":
+				terrain.CurrentState = Terrain.State.GroundTexturing;
+				twoWayBinding = true;
+				path = "#Ottd3D.ui.SpattingMenu.goml";
+				data = terrain;
+				break;
+			case "checkHeightMap":
+				terrain.CurrentState = Terrain.State.HMEdition;
+				twoWayBinding = true;
+				path = "#Ottd3D.ui.heightEditionMenu.goml";
+				data = terrain;
+				break;
+			case "checkFps":
+				path = "#Ottd3D.ui.fps.crow";
+				break;
+			case "checkShaderEditor":
+				path = "#Ottd3D.ui.ShaderEditor.crow";
+				break;
+			}
+			Window win = CrowInterface.LoadInterface (path) as Window;
+			g.Tag = win;
+			if (g.Name == "checkSplatting")
+				win.Focused += splatWin_Focused;
+			else if (g.Name == "checkHeightMap")
+				win.Focused += hmWin_Focused;
+
+
+			win.Tag = g;
+			win.Closing += (object winsender, EventArgs wine) => {
+				CheckBox cb = (winsender as Window).Tag as CheckBox;
+				cb.Tag = null;
+				cb.IsChecked = false;
+			};
+			win.DataSource = data;
+			if (twoWayBinding)
+				Crow.CompilerServices.ResolveBindings ((data as IBindable).Bindings);
+		}
+
+		void splatWin_Focused (object sender, EventArgs e)
+		{
+			terrain.CurrentState = Terrain.State.GroundTexturing;
+		}
+		void hmWin_Focused (object sender, EventArgs e)
+		{
+			terrain.CurrentState = Terrain.State.HMEdition;
+		}
+		void onHideWindow (object sender, EventArgs e)
+		{
+			CheckBox g = sender as CheckBox;
+			if (g.Tag == null)
+				return;
+			Interface.CurrentInterface.DeleteWidget (g.Tag as GraphicObject);
+			g.Tag = null;
+			terrain.CurrentState = Terrain.State.Play;
+		}
 		void onSelectViewedTex (object sender, EventArgs e)
 		{
 			GraphicObject g = sender as GraphicObject;

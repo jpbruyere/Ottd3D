@@ -145,6 +145,8 @@
     <EmbeddedResource Include="ui\menu.crow" />
     <EmbeddedResource Include="ui\ShaderEditor.crow" />
     <EmbeddedResource Include="ui\imgView.crow" />
+    <EmbeddedResource Include="ui\Button.style" />
+    <EmbeddedResource Include="ui\tmpPopper.crow" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="lib\GGL\GGL.csproj">

@@ -1,11 +1,28 @@
 ﻿<?xml version="1.0"?>
-<Border Height="-1"  VerticalAlignment="Bottom"
+<Border Height="-1"  VerticalAlignment="Top"
 		BorderWidth="1" CornerRadius="5" Background="0,4;0,4;0,4;0,8">
-	<HorizontalStack Height="-1">
-		<VerticalStack Height="-1" Width="200">
-			<RadioButton Name="Play" Caption="Play" IsChecked="true" Checked="onGameStateChange"/>
-			<RadioButton Name="HMEdition" Caption="Height Map Edition" Checked="onGameStateChange"/>
-			<RadioButton Name="GroundTexturing" Caption="Ground Painting" Checked="onGameStateChange"/>
-		</VerticalStack>
+	<HorizontalStack Height="-1" Spacing="20">
+		<Popper Template="#Ottd3D.ui.tmpPopper.crow"
+			Caption="Windows" Width="100">
+			<Border Fit="True" Background="0,4;0,4;0,4;0,8" Margin="2">
+				<VerticalStack Fit="true" Margin="10">
+					<CheckBox Name="checkImgViewer" Caption="Image Viewer" HorizontalAlignment="Left" Checked="onShowWindow" Unchecked="onHideWindow"/>
+					<CheckBox Name="checkSplatting" Caption="Splatting" HorizontalAlignment="Left" Checked="onShowWindow" Unchecked="onHideWindow"/>
+					<CheckBox Name="checkHeightMap" Caption="Height map" HorizontalAlignment="Left" Checked="onShowWindow" Unchecked="onHideWindow"/>
+					<CheckBox Name="checkFps" Caption="FPS" HorizontalAlignment="Left" Checked="onShowWindow" Unchecked="onHideWindow"/>
+					<CheckBox Name="checkShaderEditor" Caption="Shader Editor" HorizontalAlignment="Left" Checked="onShowWindow" Unchecked="onHideWindow"/>
+				</VerticalStack>
+			</Border>
+		</Popper>
+		<Popper Template="#Ottd3D.ui.tmpPopper.crow"
+			Caption="Game State" Width="100">
+			<Border Fit="True" Background="0,4;0,4;0,4;0,8" Margin="2">
+				<VerticalStack Height="-1" Width="200">
+					<RadioButton Name="Play" Caption="Play" IsChecked="true" Checked="onGameStateChange"/>
+					<RadioButton Name="HMEdition" Caption="Height Map Edition" Checked="onGameStateChange"/>
+					<RadioButton Name="GroundTexturing" Caption="Ground Painting" Checked="onGameStateChange"/>
+				</VerticalStack>
+			</Border>
+		</Popper>
 	</HorizontalStack>
 </Border>

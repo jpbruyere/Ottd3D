@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0"?>
-<Window Font="droid bold, 10" Title="Splatting" Width="100" Height="100"
+<Window Font="droid bold, 10" Title="Splatting" Width="200" Height="400"
 	Template="#Ottd3D.ui.tmpWindow.crow"
-	HorizontalAlignment="Right" Top="200">
+	HorizontalAlignment="Right" Top="10">
 	<VerticalStack Height="0" Width="0" Spacing="5" Margin="2">
 		<Button Caption="Clear" MouseClick="onClearSplatting"/>
 		<HorizontalStack Fit="true">

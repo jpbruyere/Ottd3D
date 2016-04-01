@@ -1,7 +1,6 @@
 ﻿<?xml version="1.0"?>
 <Window Font="droid bold, 10" Title="Height Map" Width="400" Height="400"
-	Template="#Ottd3D.ui.tmpWindow.crow"
-	HorizontalAlignment="Left" Top="10">
+	Template="#Ottd3D.ui.tmpWindow.crow">
 
 	<VerticalStack Margin="2">
 		<HorizontalStack Height="-1" Background="vgradient|0:DimGray|1:Black">
