@@ -125,13 +125,14 @@ namespace Ottd3D
 					SelectionRadius = selectionRadius;
 					break;
 				case State.HMEdition:					
-					gridShader.SelectionColor = new Vector4 (1, 1, 1, 1);
+					gridShader.SelectionColor = new Vector4 (0.5f, 1f, 0.5f, 1f);
 					gridShader.SelectionCenter = SelectionPos.Xy / GridSize;
 					SelectionRadius = selectionRadius;
 					break;
 				case State.ClearHM:
 					break;
 				case State.GroundTexturing:
+					gridShader.SelectionColor = new Vector4 (0.5f, 0.5f, 0.9f, 1f);
 					break;
 				default:
 					break;
@@ -553,7 +554,8 @@ namespace Ottd3D
 		void updateSplatting()
 		{			
 			splattingBrushShader.Radius = SelectionRadius;
-			splattingBrushShader.Center = SelectionPos.Xy * 4f / (float)(_splatingSize);
+			splattingBrushShader.Center = gridShader.SelectionCenter;
+			//splattingBrushShader.Center = SelectionPos.Xy * 4f / (float)(_splatingSize);
 			//splattingBrushShader.Center = gridShader.SelectionCenter;
 			splattingBrushShader.Update ();
 			gridShader.SplatTexture = splattingBrushShader.OutputTex;
@@ -562,7 +564,7 @@ namespace Ottd3D
 		void updateHeightMap()
 		{			
 			//float radiusDiv = 40f / (float)_hmSize;
-			hmGenerator.Radius = SelectionRadius * 2f;
+			hmGenerator.Radius = SelectionRadius;
 			hmGenerator.Center = gridShader.SelectionCenter;
 			hmGenerator.Update ();
 			getHeightMapData ();

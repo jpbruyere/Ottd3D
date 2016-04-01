@@ -47,7 +47,7 @@ void main(void)
 	vec4 hm0 = texture2D(heightMap, in_position.xy / mapSize);
 	pos[0] = vec3(in_position.xy, hm0.g * heightScale);
 	//layer = hm0.b * 255.0;
-	splatTexCoord = in_position.xy / vec2(512.0,512.0);
+	splatTexCoord = in_position.xy / mapSize;
 
 	for(int i = 1; i < 5; i++){
 		vec2 xy = in_position.xy + offsets[i];

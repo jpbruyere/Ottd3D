@@ -1,9 +1,9 @@
 ﻿<?xml version="1.0"?>
 <Border Height="-1"  VerticalAlignment="Top"
 		BorderWidth="1" CornerRadius="5" Background="0,4;0,4;0,4;0,8">
-	<HorizontalStack Height="-1" Spacing="20">
+	<HorizontalStack Height="-1" Spacing="1">
 		<Popper Template="#Ottd3D.ui.tmpPopper.crow"
-			Caption="Windows" Width="100">
+			Caption="Windows" Width="-1">
 			<Border Fit="True" Background="0,4;0,4;0,4;0,8" Margin="2">
 				<VerticalStack Fit="true" Margin="10">
 					<CheckBox Name="checkImgViewer" Caption="Image Viewer" HorizontalAlignment="Left" Checked="onShowWindow" Unchecked="onHideWindow"/>
@@ -15,7 +15,7 @@
 			</Border>
 		</Popper>
 		<Popper Template="#Ottd3D.ui.tmpPopper.crow"
-			Caption="Game State" Width="100">
+			Caption="Game State" Width="-1">
 			<Border Fit="True" Background="0,4;0,4;0,4;0,8" Margin="2">
 				<VerticalStack Height="-1" Width="200">
 					<RadioButton Name="Play" Caption="Play" IsChecked="true" Checked="onGameStateChange"/>
