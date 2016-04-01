@@ -106,16 +106,7 @@ namespace Ottd3D
 		public Vector2 MousePos {
 			get { return new Vector2 (Mouse.X, Mouse.Y); }
 		}
-		string shaderSource;
-		public string ShaderSource {
-			get { return shaderSource; }
-			set {
-				if (string.Equals (value, shaderSource, StringComparison.Ordinal))
-					return;
-				shaderSource = value;
-				NotifyValueChanged ("ShaderSource", shaderSource);
-			}
-		}
+
 
 		VertexArrayObject<WeightedMeshData, WeightedInstancedData> landItemsVao, transparentItemsVao;
 		Terrain terrain;
@@ -395,7 +386,7 @@ namespace Ottd3D
 			Crow.CompilerServices.ResolveBindings (this.Bindings);
 
 			editedShader = terrain.gridShader;
-			ShaderSource = editedShader.vertSource;
+			//ShaderSource = editedShader.vertSource;
 
 		}
 
@@ -581,6 +572,7 @@ namespace Ottd3D
 				break;
 			case "checkShaderEditor":
 				path = "#Ottd3D.ui.ShaderEditor.crow";
+				twoWayBinding = true;
 				break;
 			}
 			Window win = CrowInterface.LoadInterface (path) as Window;
@@ -597,6 +589,8 @@ namespace Ottd3D
 				cb.Tag = null;
 				cb.IsChecked = false;
 			};
+			if (g.Name == "checkShaderEditor")
+				data = win;
 			win.DataSource = data;
 			if (twoWayBinding)
 				Crow.CompilerServices.ResolveBindings ((data as IBindable).Bindings);
@@ -665,10 +659,6 @@ namespace Ottd3D
 		void onReloadImg (object sender, EventArgs e){
 			queryTextureViewerUpdate = true;
 		}
-		void onApplyShader (object sender, EventArgs e){
-			editedShader.vertSource = ShaderSource;
-			editedShader.Compile ();
-		}
 		#endregion
 
 		Random rnd = new Random ();
@@ -736,7 +726,10 @@ namespace Ottd3D
 			initScene ();
 
 			initInterface ();
+
+
 		}
+
 		uint frameCpt;
 		protected override void OnUpdateFrame (FrameEventArgs e)
 		{

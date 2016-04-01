@@ -1,11 +1,21 @@
 ﻿<?xml version="1.0"?>
-<Window Font="droid bold, 10" Title="GLSL Editor" Width="400" Height="400"
-	Template="#Ottd3D.ui.tmpWindow.crow">
+<ShaderEditorWindow Font="droid bold, 10" Title="GLSL Editor" Width="400" Height="400">
 	<VerticalStack Margin="2">
+		<Label Text="{EditedShader}" Width="0" Background="LightGray" Foreground="Black"/>
 		<HorizontalStack Height="-1" Background="vgradient|0:DimGray|1:Black">
-			<Button Caption="Open"/>
-			<Button Caption="Save"/>
-			<Button Caption="Apply" MouseClick="onApplyShader"/>
+			<Popper Template="#Ottd3D.ui.tmpPopper.crow"
+				Caption="Open..." Width="-1">
+				<Border Fit="True" Background="0,4;0,4;0,4;0,8" Margin="2">
+					<ListBox Fit="true" Data="{Shaders}" SelectedIndex="0"
+						SelectedItemChanged="onShaderSelect">
+					</ListBox>
+				</Border>
+		</Popper>
+		<Button Caption="Save"/>
+		<Button Caption="Apply" MouseClick="onApplyShader"/>
+		<RadioButton Width="-1" Caption="VS" IsChecked="true" Checked="onChangeShaderType"/>
+		<RadioButton Width="-1" Caption="FS" Checked="onChangeShaderType"/>
+		<RadioButton Width="-1" Caption="GS" Checked="onChangeShaderType"/>
 		</HorizontalStack>
 		<Scroller VerticalScrolling="true">
 			<TextBox Name="source" VerticalAlignment="Top" Font="mono, 12" TextAlignment="TopLeft"
@@ -13,4 +23,4 @@
 				Text="{²ShaderSource}" Multiline="true"/>
 		</Scroller>
 	</VerticalStack>
-</Window>
+</ShaderEditorWindow>

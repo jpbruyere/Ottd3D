@@ -103,6 +103,7 @@
     <Compile Include="Shaders\CacheRenderingShader.cs" />
     <Compile Include="Shaders\CircleShader.cs" />
     <Compile Include="TestDynShader.cs" />
+    <Compile Include="ui\ShaderEditorWindow.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="ui\" />
