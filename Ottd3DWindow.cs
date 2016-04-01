@@ -87,7 +87,7 @@ namespace Ottd3D
 		public Vector3 vEyeTarget = new Vector3(32, 32, 0f);
 		public Vector3 vLook = Vector3.Normalize(new Vector3(-1f, -1f, 1f));  // Camera vLook Vector
 		public float zFar = 400.0f;
-		public float zNear = 1.0f;
+		public float zNear = 0.8f;
 		public float fovY = (float)Math.PI / 4;
 
 		float eyeDist = 100;
@@ -553,6 +553,7 @@ namespace Ottd3D
 			switch (g.Name) {
 			case "checkImgViewer":
 				path = "#Ottd3D.ui.imgView.crow";
+				twoWayBinding = true;
 				queryTextureViewerUpdate = true;
 				break;
 			case "checkSplatting":

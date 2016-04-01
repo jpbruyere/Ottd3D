@@ -60,9 +60,9 @@ float getFogFactor(float fFogCoord)
 //			    return NewNormal;
 //			}
 
-const vec3 diffuse = vec3(0.3, 0.3, 0.3);
-const vec3 ambient = vec3(0.01, 0.01, 0.01);
-const vec3 specular = vec3(0.0,0.0,0.0);
+const vec3 diffuse = vec3(0.9, 0.9, 0.9);
+const vec3 ambient = vec3(0.1, 0.1, 0.1);
+const vec3 specular = vec3(0.5,0.5,0.5);
 const float shininess = 1.0;
 const float screenGamma = 1.0;
 
@@ -88,7 +88,7 @@ void main(void)
 
 	float fFogCoord = abs(vEyeSpacePos.z/vEyeSpacePos.w);
 
-	vec3 colorLinear = diffTex.rgb + diffTex.rgb * (ambient + Idiff) + Ispec;
+	vec3 colorLinear = diffTex.rgb * (ambient + Idiff) + Ispec;
 //				out_frag_color = vec4(colorLinear, diffTex.a);
 	vec4 gcc = vec4(pow(colorLinear, vec3(1.0/screenGamma)), diffTex.a);
 	out_frag_color = mix(gcc , fogColor, getFogFactor(fFogCoord));

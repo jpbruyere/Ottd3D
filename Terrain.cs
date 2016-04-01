@@ -230,13 +230,12 @@ namespace Ottd3D
 		public Ottd3D.VertexDispShader gridShader;
 		Tetra.Shader cacheShader;
 
-		void draw(){
-			//GL.ClearDepth(1.0);
+		void draw(){			
 			GL.Clear (ClearBufferMask.ColorBufferBit|ClearBufferMask.DepthBufferBit);
-			//GL.ClearDepth(0.0);
-//			GL.DepthMask (false);
-//			skybox.Render ();
-//			GL.DepthMask (true);
+
+			GL.DepthMask (false);
+			skybox.Render ();
+			GL.DepthMask (true);
 
 			gridShader.Enable ();
 
@@ -375,7 +374,7 @@ namespace Ottd3D
 			bool depthTest = GL.GetBoolean (GetPName.DepthTest);
 
 			GL.Enable (EnableCap.DepthTest);
-			GL.DepthFunc (DepthFunction.Less);
+			//GL.DepthFunc (DepthFunction.Always);
 
 			cacheShader.Enable ();
 
@@ -387,6 +386,7 @@ namespace Ottd3D
 			GL.BindTexture (TextureTarget.Texture2D, 0);
 			if (depthTest)
 				GL.Enable (EnableCap.DepthTest);
+			GL.DepthFunc (DepthFunction.Lequal);
 		}
 
 		#region FBO

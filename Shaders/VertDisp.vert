@@ -30,6 +30,19 @@ out vec3 n;
 //selection map output
 out vec4 vertex;
 
+vec3 CalculateSurfaceNormal (vec3 p1, vec3 p2, vec3 p3)
+{
+
+	vec3 U = p2 - p1;
+	vec3 V = p3 - p1;
+
+	return normalize(vec3(
+		U.y * V.z * U.z * V.y,
+		U.z * V.x - U.x * V.z,
+		U.x * V.y - U.y * V.x));
+}
+
+
 void main(void)
 {
 	vec2[] offsets = vec2[]
@@ -46,7 +59,7 @@ void main(void)
 
 	vec4 hm0 = texture2D(heightMap, in_position.xy / mapSize);
 	pos[0] = vec3(in_position.xy, hm0.g * heightScale);
-	//layer = hm0.b * 255.0;
+
 	splatTexCoord = in_position.xy / mapSize;
 
 	for(int i = 1; i < 5; i++){
@@ -55,19 +68,26 @@ void main(void)
 		pos[i] = vec3(xy, h);
 	}
 
-
+	/*
 	n = normalize(
 		cross(pos[2] - pos[0], pos[1] - pos[0])
 	  + cross(pos[3] - pos[0], pos[2] - pos[0]) 
 	  + cross(pos[4] - pos[0], pos[3] - pos[0]) 
 	  + cross(pos[1] - pos[0], pos[4] - pos[0]) / 4.0);
-	  /*
+
 	vec3 va = normalize( vec3(1.0, 0.0, pos[2].z - pos[0].z) );
 	vec3 vb = normalize( vec3(0.0, 1.0, pos[1].z - pos[0].z) );
 
 	n = normalize( cross(va, vb) );
 	*/
-	  n = (Normal * vec4(n,0)).xyz;
+
+	n = normalize(
+		CalculateSurfaceNormal(pos[0],pos[2],pos[1])+ 
+		//CalculateSurfaceNormal(pos[0],pos[1],pos[4])+
+		//CalculateSurfaceNormal(pos[0],pos[4],pos[3])+
+		CalculateSurfaceNormal(pos[0],pos[3],pos[2]));
+	n = (Normal * vec4(n,0)).xyz;
+
 	vEyeSpacePos = ModelView *  vec4(pos[0], 1);
 	vertex = vec4((pos[0].xy) / (mapSize-vec2(1.0,1.0)), pos[0].z / heightScale, 1.0);
 	gl_Position = Projection * vEyeSpacePos;

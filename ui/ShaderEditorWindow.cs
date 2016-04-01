@@ -25,6 +25,7 @@ using System.ComponentModel;
 using Tetra;
 using OpenTK.Graphics.OpenGL;
 using System.Collections.Generic;
+using System.IO;
 
 namespace Ottd3D
 {
@@ -73,6 +74,17 @@ namespace Ottd3D
 		void onApplyShader (object sender, EventArgs e){
 			if (EditedShader != null)
 				EditedShader.Compile ();
+		}
+		void onSaveShader (object sender, EventArgs e){
+			if (EditedShader == null)
+				return;
+			string path = EditedShader.GetSourcePath (shaderType);
+			if (string.IsNullOrEmpty (path))
+				return;
+			using (Stream s = new FileStream (path, FileMode.Create)) {
+				byte[] buff = System.Text.Encoding.ASCII.GetBytes (EditedShader.GetSource (shaderType));
+				s.Write(buff, 0, buff.Length);
+			}
 		}
 		public ShaderEditorWindow () : base()
 		{

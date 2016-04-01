@@ -11,7 +11,7 @@
 					</ListBox>
 				</Border>
 		</Popper>
-		<Button Caption="Save"/>
+		<Button Caption="Save" MouseClick="onSaveShader"/>
 		<Button Caption="Apply" MouseClick="onApplyShader"/>
 		<RadioButton Width="-1" Caption="VS" IsChecked="true" Checked="onChangeShaderType"/>
 		<RadioButton Width="-1" Caption="FS" Checked="onChangeShaderType"/>

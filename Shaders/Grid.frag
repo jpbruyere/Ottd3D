@@ -55,6 +55,11 @@ float getFogFactor(float fFogCoord)
    
    return fResult;
 }
+const vec3 diffuse = vec3(0.9, 0.9, 0.9);
+const vec3 ambient = vec3(0.1, 0.1, 0.1);
+const vec3 specular = vec3(0.0,0.0,0.0);
+const float shininess = 1.0;
+const float screenGamma = 1.0;
 
 void main(void)
 {
@@ -68,26 +73,31 @@ void main(void)
 			            - smoothstep(sel_radius - border, sel_radius, dist);		
 	}
 
-	vec3 l;
-	if (lightPos.w == 0.0)
-		l = normalize(-lightPos.xyz);
-	else
-		l = normalize(lightPos.xyz - vEyeSpacePos.xyz);
+	vec3 vLight;
+	vec3 vEye = normalize(-vEyeSpacePos.xyz);
 
-	float nl = clamp(max(dot(n,l), 0.0),0.7,1.0);
+	if (lightPos.w == 0.0)
+		vLight = normalize(-lightPos.xyz);
+	else
+		vLight = normalize(lightPos.xyz - vEyeSpacePos.xyz);
+
+	//blinn phong
+	vec3 halfDir = normalize(vLight + vEye);
+	float specAngle = max(dot(halfDir, n), 0.0);
+	vec3 Ispec = specular * pow(specAngle, shininess);
+	vec3 Idiff = diffuse * max(dot(n,vLight), 0.0);
+
 
 	vec4 splat = texture (splatTex, splatTexCoord);
 
 	vec3 t1 = texture( tex, vec3(texCoord, splat.r * 255.0)).rgb;
 	vec3 t2 = texture( tex, vec3(texCoord, splat.g * 255.0)).rgb;
 
-	vec4 c = vec4(mix (t1, t2, splat.b) * nl, 1.0);
+	vec3 c = mix (t1, t2, splat.b);
 
-	// Add fog
+	vec3 colorLinear = c * (ambient + Idiff) + Ispec;
 
-	c = mix(c, fogColor, getFogFactor(fFogCoord));
-
-	out_frag_color = mix(sel_color, c, selCoef);
+	out_frag_color = mix(sel_color, vec4(colorLinear,1.0), selCoef);
 
 //	ivec2 i = floatBitsToInt(vertex.xy);
 //	vec4 res = intBitsToFloat(ivec4(i.x , i.y , 1, 1));
