@@ -470,7 +470,10 @@ namespace Ottd3D
 		}
 		#endregion
 
-		public void Update(Ottd3DWindow win){
+		public void Update(Ottd3DWindow win, bool updateCache = false){
+			if (updateCache)
+				gridCacheIsUpToDate = false;
+			
 			switch (CurrentState) {
 			case State.Play:
 				if (win.CrowInterface.hoverWidget != null)

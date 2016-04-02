@@ -11,8 +11,6 @@ layout (std140) uniform fogData
 	float fDensity; // For exp and exp2 equation   
 	int iEquation; // 0 = linear, 1 = exp, 2 = exp2
 };
-
-
 uniform sampler2D tex;
 uniform sampler2D normal;
 
@@ -22,6 +20,13 @@ layout (std140) uniform block_data{
 	mat4 Normal;
 	vec4 lightPos;
 	vec4 Color;
+	float ScreenGama;
+};
+layout (std140) uniform materialData{
+	vec3 Diffuse;
+	vec3 Ambient;
+	vec3 Specular;
+	float Shininess;
 };
 
 in vec2 texCoord;			
@@ -60,11 +65,6 @@ float getFogFactor(float fFogCoord)
 //			    return NewNormal;
 //			}
 
-const vec3 diffuse = vec3(0.9, 0.9, 0.9);
-const vec3 ambient = vec3(0.1, 0.1, 0.1);
-const vec3 specular = vec3(0.5,0.5,0.5);
-const float shininess = 1.0;
-const float screenGamma = 1.0;
 
 void main(void)
 {
@@ -83,20 +83,14 @@ void main(void)
 	//blinn phong
 	vec3 halfDir = normalize(vLight + vEye);
 	float specAngle = max(dot(halfDir, n), 0.0);
-	vec3 Ispec = specular * pow(specAngle, shininess);
-	vec3 Idiff = diffuse * max(dot(n,vLight), 0.0);
+	vec3 Ispec = Specular * pow(specAngle, Shininess);
+	vec3 Idiff = Diffuse * max(dot(n,vLight), 0.0);
 
 	float fFogCoord = abs(vEyeSpacePos.z/vEyeSpacePos.w);
 
-	vec3 colorLinear = diffTex.rgb * (ambient + Idiff) + Ispec;
-//				out_frag_color = vec4(colorLinear, diffTex.a);
-	vec4 gcc = vec4(pow(colorLinear, vec3(1.0/screenGamma)), diffTex.a);
+	vec3 colorLinear = diffTex.rgb * (Ambient + Idiff) + Ispec;
+
+	vec4 gcc = vec4(pow(colorLinear, vec3(1.0/ScreenGama)), diffTex.a);
 	out_frag_color = mix(gcc , fogColor, getFogFactor(fFogCoord));
 
-	/*
-	out_frag_color = vec4( 
-		mix(diffTex.rgb * Idiff , fogColor.rgb, getFogFactor(fFogCoord)),diffTex.a);
-
-	out_frag_color = vec4(diffTex.rgb * Idiff , diffTex.a)*fogColor;
-	*/
 }

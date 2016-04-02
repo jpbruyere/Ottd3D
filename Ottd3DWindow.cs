@@ -44,8 +44,23 @@ namespace Ottd3D
 			public Matrix4 normal;
 			public Vector4 LightPosition;
 			public Vector4 Color;
+			public float ScreenGamma;
 		}
+		[StructLayout(LayoutKind.Explicit, Size=64)]
+		public struct UBOMaterialData
+		{
+			[FieldOffset(0)]public Vector3 Diffuse;
+			[FieldOffset(16)]public Vector3 Ambient;
+			[FieldOffset(32)]public Vector3 Specular;
+			[FieldOffset(48)]public float Shininess;
 
+			public UBOMaterialData(Vector3 kd, Vector3 ka, Vector3 ks, float shininess = 1.0f){
+				Diffuse = kd;
+				Ambient = ka;
+				Specular = ks;
+				Shininess = shininess;
+			}
+		}
 		[StructLayout(LayoutKind.Sequential)]
 		public struct UBOFogData
 		{
@@ -98,9 +113,23 @@ namespace Ottd3D
 
 		public Vector4 vLight = new Vector4 (0.5f, 0.5f, -1.0f, 0f);
 
-		UBOSharedData shaderSharedData;
-		UBOFogData fogData;
-		int uboShaderSharedData, uboFogData;
+		UBOMaterialData terrainMat = new UBOMaterialData(
+			new Vector3 (0.8f, 0.8f, 0.8f),
+			new Vector3 (0.1f, 0.1f, 0.1f),
+			new Vector3 (0.0f,0.0f,0.0f),
+			1f
+		);
+		UBOMaterialData heolMat = new UBOMaterialData(
+			new Vector3 (0.9f, 0.9f, 0.9f),
+			new Vector3 (0.1f, 0.1f, 0.1f),
+			new Vector3 (0.5f,0.5f,0.5f),
+			1.0f
+		);
+
+		UniformBufferObject<UBOMaterialData> material;
+		UniformBufferObject<UBOSharedData> shaderSharedData;
+		UniformBufferObject<UBOFogData> fogData;
+
 		#endregion
 
 		public Vector2 MousePos {
@@ -110,7 +139,6 @@ namespace Ottd3D
 
 		VertexArrayObject<WeightedMeshData, WeightedInstancedData> landItemsVao, transparentItemsVao;
 		Terrain terrain;
-
 
 		void initGL(){
 			GL.Enable(EnableCap.DepthTest);
@@ -247,9 +275,17 @@ namespace Ottd3D
 		}
 		void drawScene(){
 			GL.Enable (EnableCap.DepthTest);
+
+			material.Update (terrainMat);
+
 			terrain.Render ();
 
 //			GL.Disable (EnableCap.Blend);
+
+			//material.Update (heolMat);
+			material.Update (heolMat);
+
+
 			objShader.Enable ();
 			GL.DepthFunc (DepthFunction.Lequal);
 
@@ -301,6 +337,62 @@ namespace Ottd3D
 			//RailTrack.Render ();			
 		}
 
+		Random rnd = new Random ();			
+		void addRandomTrees(VertexArrayObject<MeshData, VAOInstancedData> vao,
+			int count, string objPath, string diffTexPath, float _scale=1f)
+		{			
+			VAOItem<VAOInstancedData> vaoi = (VAOItem<VAOInstancedData>)vao.Add (OBJMeshLoader.Load (objPath));
+			vaoi.DiffuseTexture = Tetra.Texture.Load(diffTexPath);
+			vaoi.InstancedDatas = new Tetra.VAOInstancedData[count];
+			for (int i = 0; i < count; i++) {				
+				Vector2 pos = new Vector2 ((float)rnd.NextDouble() * terrain.GridSize, (float)rnd.NextDouble() * terrain.GridSize);
+				float scale = (float)(rnd.NextDouble () * 0.002f + 0.004f)*_scale;
+				vaoi.InstancedDatas[i].modelMats =Matrix4.CreateRotationX (MathHelper.PiOver2) * Matrix4.CreateScale (scale)* Matrix4.CreateTranslation(pos.X, pos.Y, 0f);
+			}
+			vaoi.UpdateInstancesData ();			
+		}
+
+		#region animation
+		float heolAngle = 0f, pawnAngle=0f, pawnAngleIncrement=0.05f, pawnAngleLimit=0.5f;
+		void animate()
+		{
+
+			//			if (updateMatrices) {
+			//				heolienne.UpdateModelsMat ();
+			//				updateMatrices = false;
+			//				gridCacheIsUpToDate = false;
+			//			}
+			DualQuaternion dq = new DualQuaternion(Quaternion.FromEulerAngles(0f,heolAngle,0f),new Vector3(0f,0f,0f));
+			for (int i = 0; i < heoliennes.InstancedDatas.Length; i++) {
+				heoliennes.InstancedDatas [i].quat0 = new DualQuaternion(Quaternion.FromEulerAngles(heolAngle*0.2f,0f,0f),new Vector3(0f,0f,0f)).m_real;
+				heoliennes.InstancedDatas [i].bpos1 = dq.m_dual;
+				heoliennes.InstancedDatas [i].quat1 = heoliennes.InstancedDatas [i].quat0*dq.m_real;
+			}
+			heoliennes.UpdateInstancesData ();
+
+			for (int i = 0; i < heollow.InstancedDatas.Length; i++) {
+				//heollow.InstancedDatas [i].bpos1 = dq.m_dual;
+				heollow.InstancedDatas [i].quat1 = dq.m_real;
+			}
+			heollow.UpdateInstancesData ();
+
+			for (int i = 0; i < pawn.InstancedDatas.Length; i++) {
+				pawn.InstancedDatas [i].quat1 = Quaternion.FromEulerAngles(pawnAngle,pawnAngle,pawnAngle);
+			}
+			pawn.UpdateInstancesData ();
+
+			pawnAngle += pawnAngleIncrement;
+
+			if (pawnAngleIncrement > 0f){
+				if (pawnAngle > pawnAngleLimit)
+					pawnAngleIncrement = -pawnAngleIncrement;
+			}else if (pawnAngle < -pawnAngleLimit)
+				pawnAngleIncrement = -pawnAngleIncrement;
+
+			heolAngle += MathHelper.Pi * 0.007f;			
+		}
+		#endregion
+
 		#region Shaders
 
 		public static Mat4InstancedShader objShader;
@@ -311,39 +403,35 @@ namespace Ottd3D
 
 			//objShader.DiffuseTexture = heolienneTex;
 
-			uboShaderSharedData = GL.GenBuffer ();
-			GL.BindBuffer (BufferTarget.UniformBuffer, uboShaderSharedData);
-			GL.BufferData(BufferTarget.UniformBuffer,Marshal.SizeOf(shaderSharedData),
-					ref shaderSharedData, BufferUsageHint.DynamicCopy);
-			GL.BindBuffer (BufferTarget.UniformBuffer, 0);
-			GL.BindBufferBase (BufferRangeTarget.UniformBuffer, 0, uboShaderSharedData);
+			shaderSharedData = new UniformBufferObject<UBOSharedData> (BufferUsageHint.DynamicCopy);
+			shaderSharedData.Datas.Color = new Vector4 (1f, 1f, 1f, 1f);
+			shaderSharedData.Datas.ScreenGamma = 1.0f;
+			shaderSharedData.Bind (0);
 
-			fogData = UBOFogData.CreateUBOFogData();
-			uboFogData = GL.GenBuffer ();
-			GL.BindBuffer (BufferTarget.UniformBuffer, uboFogData);
-			GL.BufferData(BufferTarget.UniformBuffer,Marshal.SizeOf(fogData),
-				ref fogData, BufferUsageHint.StaticCopy);
-			GL.BindBuffer (BufferTarget.UniformBuffer, 0);
-			GL.BindBufferBase (BufferRangeTarget.UniformBuffer, 1, uboFogData);
+			fogData = new UniformBufferObject<UBOFogData> (
+				UBOFogData.CreateUBOFogData (), BufferUsageHint.StaticCopy);
+			fogData.Bind (1);
+
+			material = new UniformBufferObject<UBOMaterialData> (BufferUsageHint.DynamicCopy);
+			material.Bind (2);
 		}
+			
 
 		void updateShadersMatrices(){			
 			terrain.UpdateMVP (projection, modelview, vLook);
 
-			shaderSharedData.projection = projection;
-			shaderSharedData.view = modelview;
-			shaderSharedData.normal = modelview.Inverted();
-			shaderSharedData.normal.Transpose ();
-			shaderSharedData.LightPosition = Vector4.Transform(vLight, modelview);
-			shaderSharedData.Color = new Vector4 (1, 1, 1, 1);
+			shaderSharedData.Datas.projection = projection;
+			shaderSharedData.Datas.view = modelview;
+			shaderSharedData.Datas.normal = modelview.Inverted();
+			shaderSharedData.Datas.normal.Transpose ();
+			shaderSharedData.Datas.LightPosition = Vector4.Transform(vLight, modelview);
 
-			GL.BindBuffer (BufferTarget.UniformBuffer, uboShaderSharedData);
-			GL.BufferData(BufferTarget.UniformBuffer,Marshal.SizeOf(shaderSharedData),
-				ref shaderSharedData, BufferUsageHint.DynamicCopy);
-			GL.BindBuffer (BufferTarget.UniformBuffer, 0);
+			shaderSharedData.Update ();
 		}
 
 		#endregion
+
+		bool updateGridCache = false;
 
 		public void UpdateViewMatrix()
 		{
@@ -394,16 +482,19 @@ namespace Ottd3D
 
 		string viewedImgPath = @"tmp.png";
 		int viewedTexture;
-		volatile bool queryTextureViewerUpdate = false;
-		volatile bool autoUpdate = false;
+		volatile bool
+			queryTextureViewerUpdate = false, 
+			queryGammaUpdate = false,
+			autoUpdate = false;
 
-		public bool AutoUpdate {
-			get { return autoUpdate; }
+		public float ScreenGamma {
+			get { return shaderSharedData.Datas.ScreenGamma; }
 			set {
-				if (value == autoUpdate)
+				if (value == shaderSharedData.Datas.ScreenGamma)
 					return;	
-				autoUpdate = value;
-				NotifyValueChanged ("AutoUpdate", autoUpdate);
+				shaderSharedData.Datas.ScreenGamma = value;
+				NotifyValueChanged ("ScreenGamma", shaderSharedData.Datas.ScreenGamma);
+				queryGammaUpdate = true;
 			}
 		}
 
@@ -662,23 +753,7 @@ namespace Ottd3D
 		}
 		#endregion
 
-		Random rnd = new Random ();
-
-			
-		void addRandomTrees(VertexArrayObject<MeshData, VAOInstancedData> vao,
-			int count, string objPath, string diffTexPath, float _scale=1f)
-		{			
-			VAOItem<VAOInstancedData> vaoi = (VAOItem<VAOInstancedData>)vao.Add (OBJMeshLoader.Load (objPath));
-			vaoi.DiffuseTexture = Tetra.Texture.Load(diffTexPath);
-			vaoi.InstancedDatas = new Tetra.VAOInstancedData[count];
-			for (int i = 0; i < count; i++) {				
-				Vector2 pos = new Vector2 ((float)rnd.NextDouble() * terrain.GridSize, (float)rnd.NextDouble() * terrain.GridSize);
-				float scale = (float)(rnd.NextDouble () * 0.002f + 0.004f)*_scale;
-				vaoi.InstancedDatas[i].modelMats =Matrix4.CreateRotationX (MathHelper.PiOver2) * Matrix4.CreateScale (scale)* Matrix4.CreateTranslation(pos.X, pos.Y, 0f);
-			}
-			vaoi.UpdateInstancesData ();			
-		}
-
+		#region Depth Sorting
 		volatile bool depthSortingDone = false;
 		Thread tDepthSort;
 
@@ -714,6 +789,8 @@ namespace Ottd3D
 						CompareTo	((new Vector2(x.modelMats.Row3.X, x.modelMats.Row3.Y) - vEye.Xy).LengthFast); });
 			
 		}
+		#endregion
+
 		#region OTK overrides
 		protected override void OnLoad (EventArgs e)
 		{
@@ -759,40 +836,6 @@ namespace Ottd3D
 				//GL.Light (LightName.Light0, LightParameter.Position, vLight);
 			}
 
-//			if (updateMatrices) {
-//				heolienne.UpdateModelsMat ();
-//				updateMatrices = false;
-//				gridCacheIsUpToDate = false;
-//			}
-			DualQuaternion dq = new DualQuaternion(Quaternion.FromEulerAngles(0f,heolAngle,0f),new Vector3(0f,0f,0f));
-			for (int i = 0; i < heoliennes.InstancedDatas.Length; i++) {
-				heoliennes.InstancedDatas [i].quat0 = new DualQuaternion(Quaternion.FromEulerAngles(heolAngle*0.2f,0f,0f),new Vector3(0f,0f,0f)).m_real;
-				heoliennes.InstancedDatas [i].bpos1 = dq.m_dual;
-				heoliennes.InstancedDatas [i].quat1 = heoliennes.InstancedDatas [i].quat0*dq.m_real;
-			}
-			heoliennes.UpdateInstancesData ();
-
-			for (int i = 0; i < heollow.InstancedDatas.Length; i++) {
-				//heollow.InstancedDatas [i].bpos1 = dq.m_dual;
-				heollow.InstancedDatas [i].quat1 = dq.m_real;
-			}
-			heollow.UpdateInstancesData ();
-
-			for (int i = 0; i < pawn.InstancedDatas.Length; i++) {
-				pawn.InstancedDatas [i].quat1 = Quaternion.FromEulerAngles(pawnAngle,pawnAngle,pawnAngle);
-			}
-			pawn.UpdateInstancesData ();
-
-			pawnAngle += pawnAngleIncrement;
-
-			if (pawnAngleIncrement > 0f){
-				if (pawnAngle > pawnAngleLimit)
-					pawnAngleIncrement = -pawnAngleIncrement;
-			}else if (pawnAngle < -pawnAngleLimit)
-				pawnAngleIncrement = -pawnAngleIncrement;
-
-			heolAngle += MathHelper.Pi * 0.007f;
-
 //			if (depthSortingDone) {
 //				foreach (Tetra.VAOItem<Tetra.VAOInstancedData> item in transparentItemsVao.Meshes) 
 //					item.UpdateInstancesData();	
@@ -801,13 +844,21 @@ namespace Ottd3D
 //			}
 
 			Animation.ProcessAnimations ();
+			animate ();
 
-			terrain.Update (this);
 
+			if (queryGammaUpdate) {
+				queryGammaUpdate = false;
+				shaderSharedData.Update ();
+				updateGridCache = true;
+			}
+
+			material.Update (terrainMat);
+			terrain.Update (this, updateGridCache);
+			updateGridCache = false;
+				
 			if (queryTextureViewerUpdate || (autoUpdate && frameCpt % 60 == 0)) {
 				queryTextureViewerUpdate = false;
-
-
 
 				if (viewedTexture < 0) {					
 					GL.ReadBuffer (ReadBufferMode.Back);
@@ -835,59 +886,30 @@ namespace Ottd3D
 //						}
 					}
 				} else {
-					saveTextureFromId (viewedTexture, viewedImgPath);
+					Tetra.Texture.SaveTextureFromId (viewedTexture, viewedImgPath);
 				}
 
 				ViewedImgPath = viewedImgPath;//notify value changed
 			}
 
 		}
-		void saveTextureFromId(int texId, string path){
-			int depthSize, alphaSize, redSize, greenSize, blueSize;
-			int texW, texH;
-			OpenTK.Graphics.OpenGL.PixelFormat pixFormat;
-			PixelType pixType;
-			byte[] data;
-
-			GL.BindTexture (TextureTarget.Texture2D, texId);
-			GL.GetTexLevelParameter (TextureTarget.Texture2D, 0, GetTextureParameter.TextureWidth, out texW);
-			GL.GetTexLevelParameter (TextureTarget.Texture2D, 0, GetTextureParameter.TextureHeight, out texH);
-			GL.GetTexLevelParameter (TextureTarget.Texture2D, 0, GetTextureParameter.TextureDepthSize, out depthSize);
-			GL.GetTexLevelParameter (TextureTarget.Texture2D, 0, GetTextureParameter.TextureAlphaSize, out alphaSize);
-			GL.GetTexLevelParameter (TextureTarget.Texture2D, 0, GetTextureParameter.TextureRedSize, out redSize);
-			GL.GetTexLevelParameter (TextureTarget.Texture2D, 0, GetTextureParameter.TextureGreenSize, out greenSize);
-			GL.GetTexLevelParameter (TextureTarget.Texture2D, 0, GetTextureParameter.TextureBlueSize, out blueSize);
-
-			if (depthSize > 0) {
-				pixFormat = PixelFormat.DepthComponent;
-				pixType = PixelType.Float;
-				float[] df = new float[texW* texH];
-				GL.GetTexImage (TextureTarget.Texture2D, 0, pixFormat, pixType, df);
-				GL.BindTexture (TextureTarget.Texture2D, 0);
-				data = new byte[texW * texH * 4];
-				float min = df.Min ();
-				float max = df.Max ();
-				float diff = max - min;
-				for (int i = 0; i < df.Length; i++) {
-					byte b = (byte)((df [i] - min) / diff *255f );
-					data [i * 4] = b;
-					data [i * 4 + 1] = b;
-					data [i * 4 + 2] = b;
-					data [i * 4 + 3] = 255;
-				}
-			} else {
-				pixFormat = PixelFormat.Bgra;
-				pixType = PixelType.UnsignedByte;
-				data = new byte[texW * texH * 4];
-				GL.GetTexImage (TextureTarget.Texture2D, 0, pixFormat, pixType, data);
-			}
-
-			GL.BindTexture (TextureTarget.Texture2D, 0);
-			data = imgHelpers.imgHelpers.flitY(data, 4*texW,texH);
-			Cairo.Surface bmp = new Cairo.ImageSurface(data, Cairo.Format.ARGB32, texW, texH, texW*4);
-			bmp.WriteToPng (path);
-			bmp.Dispose ();			
+		protected override void OnResize (EventArgs e)
+		{
+			base.OnResize (e);
+			terrain.CacheSize = ClientRectangle.Size;
+			UpdateViewMatrix();
 		}
+		public override void GLClear ()
+		{
+			GL.ClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+			GL.Clear (ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
+		}
+		public override void OnRender (FrameEventArgs e)
+		{
+			drawScene ();
+		}
+		#endregion
+
 		void saveBackBufferDepth()
 		{
 			int backbuffDepth, fbo;
@@ -923,29 +945,12 @@ namespace Ottd3D
 
 			GL.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
 
-			saveTextureFromId (backbuffDepth, viewedImgPath);
+			Tetra.Texture.SaveTextureFromId (backbuffDepth, viewedImgPath);
+
 			GL.DeleteFramebuffer (fbo);
 			GL.DeleteTexture (backbuffDepth);
 			GL.DrawBuffer (DrawBufferMode.Back);
 		}
-		float heolAngle = 0f, pawnAngle=0f, pawnAngleIncrement=0.05f, pawnAngleLimit=0.5f;
-		protected override void OnResize (EventArgs e)
-		{
-			base.OnResize (e);
-			terrain.CacheSize = ClientRectangle.Size;
-			UpdateViewMatrix();
-		}
-		public override void GLClear ()
-		{
-			GL.ClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-			GL.Clear (ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
-		}
-		public override void OnRender (FrameEventArgs e)
-		{
-			drawScene ();
-		}
-		#endregion
-			
 
 		#region Main and CTOR
 		[STAThread]

@@ -7,6 +7,13 @@ layout (std140) uniform block_data{
 	mat4 Normal;
 	vec4 lightPos;
 	vec4 Color;
+	float ScreenGama;
+};
+layout (std140) uniform materialData{
+	vec3 Diffuse;
+	vec3 Ambient;
+	vec3 Specular;
+	float Shininess;
 };
 layout (std140) uniform fogData
 { 
@@ -55,11 +62,6 @@ float getFogFactor(float fFogCoord)
    
    return fResult;
 }
-const vec3 diffuse = vec3(0.9, 0.9, 0.9);
-const vec3 ambient = vec3(0.1, 0.1, 0.1);
-const vec3 specular = vec3(0.0,0.0,0.0);
-const float shininess = 1.0;
-const float screenGamma = 1.0;
 
 void main(void)
 {
@@ -84,8 +86,8 @@ void main(void)
 	//blinn phong
 	vec3 halfDir = normalize(vLight + vEye);
 	float specAngle = max(dot(halfDir, n), 0.0);
-	vec3 Ispec = specular * pow(specAngle, shininess);
-	vec3 Idiff = diffuse * max(dot(n,vLight), 0.0);
+	vec3 Ispec = Specular * pow(specAngle, Shininess);
+	vec3 Idiff = Diffuse * max(dot(n,vLight), 0.0);
 
 
 	vec4 splat = texture (splatTex, splatTexCoord);
@@ -95,9 +97,11 @@ void main(void)
 
 	vec3 c = mix (t1, t2, splat.b);
 
-	vec3 colorLinear = c * (ambient + Idiff) + Ispec;
+	vec3 colorLinear = c * (Ambient + Idiff) + Ispec;
+	vec4 gcc = mix(sel_color, vec4(colorLinear,1.0), selCoef);
+	gcc = mix(gcc , fogColor, getFogFactor(fFogCoord));
+	out_frag_color = vec4(pow(gcc.rgb, vec3(1.0/ScreenGama)), gcc.a);
 
-	out_frag_color = mix(sel_color, vec4(colorLinear,1.0), selCoef);
 
 //	ivec2 i = floatBitsToInt(vertex.xy);
 //	vec4 res = intBitsToFloat(ivec4(i.x , i.y , 1, 1));

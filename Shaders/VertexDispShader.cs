@@ -70,6 +70,8 @@ namespace Ottd3D
 		{
 			GL.UniformBlockBinding(pgmId, GL.GetUniformBlockIndex(pgmId, "block_data"), 0);
 			GL.UniformBlockBinding(pgmId, GL.GetUniformBlockIndex(pgmId, "fogData"), 1);
+			GL.UniformBlockBinding(pgmId, GL.GetUniformBlockIndex (pgmId, "materialData"), 2);
+
 
 
 			mapSizeLoc = GL.GetUniformLocation (pgmId, "mapSize");

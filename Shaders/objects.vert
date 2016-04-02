@@ -21,6 +21,7 @@ layout (std140) uniform block_data{
 	mat4 Normal;
 	vec4 lightPos;
 	vec4 Color;
+	float ScreenGama;
 };
 
 uniform vec3 bones[4];

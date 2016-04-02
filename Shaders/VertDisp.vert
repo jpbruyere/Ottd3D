@@ -8,6 +8,7 @@ layout (std140, index = 0) uniform block_data{
 	mat4 Normal;
 	vec4 lightPos;
 	vec4 Color;
+	float ScreenGama;
 };
 
 uniform mat4 Model;

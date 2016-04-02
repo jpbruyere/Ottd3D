@@ -24,5 +24,6 @@
 				</VerticalStack>
 			</Border>
 		</Popper>
+		<Spinner SmallIncrement="0,1" Value="{²ScreenGamma}" Width="150"/>
 	</HorizontalStack>
 </Border>
