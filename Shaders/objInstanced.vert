@@ -16,7 +16,8 @@ layout (std140) uniform block_data{
 	vec4 Shared; //x=ScreenGama, y=ShadingPass
 };
 
-out vec2 texCoord;			
+out vec2 texCoord;
+out vec4 shadowCoord;			
 out vec3 n;			
 out vec4 vEyeSpacePos;
 
@@ -26,6 +27,7 @@ void main(void)
 	n = normalize(vec3(Normal * in_model * vec4(in_normal,0)));
 
 	vEyeSpacePos = ModelView * in_model * vec4(in_position, 1);
+	shadowCoord = shadowTexMat * in_model * vec4(in_position, 1);
 	
 	gl_Position = Projection * ModelView * in_model * vec4(in_position, 1);
 }

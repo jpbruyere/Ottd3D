@@ -55,6 +55,8 @@ namespace Ottd3D
 		public override void Enable ()
 		{
 			GL.UseProgram (pgmId);
+			GL.ActiveTexture (TextureUnit.Texture7);
+			GL.BindTexture(TextureTarget.Texture2D, ShadowMap);
 			GL.ActiveTexture (TextureUnit.Texture1);
 			GL.BindTexture(TextureTarget.Texture2D, NormalTexture);
 			GL.ActiveTexture (TextureUnit.Texture0);

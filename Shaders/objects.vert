@@ -27,7 +27,8 @@ layout (std140) uniform block_data{
 
 uniform vec3 bones[4];
 
-out vec2 texCoord;			
+out vec2 texCoord;
+out vec4 shadowCoord;			
 out vec3 n;			
 out vec4 vEyeSpacePos;
 
@@ -80,6 +81,7 @@ void main(void)
 	n = vec3(Normal * vec4(inN,0));
 
 	vEyeSpacePos = ModelView * in_model * vec4(inP, 1);
+	shadowCoord = shadowTexMat * in_model * vec4(inP, 1);
 	
 	gl_Position = Projection * ModelView * in_model * vec4(inP, 1);
 }

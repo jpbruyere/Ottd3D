@@ -135,7 +135,7 @@ void main(void)
 		// ...variable bias
 		cosTheta = clamp(cosTheta, 0.0, 1.0);
 		float bias = 0.005*tan(acos(cosTheta));
-		bias = clamp(bias, 0,0.01);
+		bias = clamp(bias, 0,0.001);
 		float visibility=1.0;
 		// Sample the shadow map 4 times
 
@@ -145,10 +145,7 @@ void main(void)
 				vec3(shadowCoord.st + poissonDisk[i]/700.0,
 				(shadowCoord.z+bias)/shadowCoord.w)));
 		}
-		/*
-		if ( texture( shadowTex, shadowCoord.xy ).z  <  shadowCoord.z){ 
-		    visibility = 0.0; 
-		}*/
+
 		vec3 colorLinear = c * (Ambient + Idiff) + Ispec;
 		colorLinear = colorLinear * visibility;
 		vec4 gcc = mix(sel_color, vec4(colorLinear,1.0), selCoef);
