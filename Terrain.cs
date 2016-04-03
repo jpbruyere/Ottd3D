@@ -346,10 +346,6 @@ namespace Ottd3D
 			hmData = new byte[_hmSize*_hmSize*4];
 			getHeightMapData ();
 		}
-		void drawGridCache()
-		{
-			renderGridCache ();
-		}
 
 		#region Grid Cache
 		bool	gridCacheIsUpToDate = false,
@@ -540,10 +536,10 @@ namespace Ottd3D
 
 			skybox.shader.MVP =  Matrix4.CreateRotationX(-MathHelper.PiOver2) *  Matrix4.LookAt(Vector3.Zero, -vLook, Vector3.UnitZ) * projection;
 
-			gridCacheIsUpToDate = false;
+			//gridCacheIsUpToDate = false;
 		}
 		public void Render(){
-			drawGridCache ();
+			renderGridCache ();
 		}
 
 		void updatePtrHm()
@@ -604,18 +600,6 @@ namespace Ottd3D
 				gridCacheIsUpToDate = false;
 			}
 			updatePtrHm ();
-
-			if (CurrentState == State.GroundTexturing) {					
-				//				if (Mouse [OpenTK.Input.MouseButton.Left]) {
-				//					splattingBrushShader.Color = splatBrush;
-				//					updateSplatting ();
-				//				} else if (Mouse [OpenTK.Input.MouseButton.Right]) {
-				//					splattingBrushShader.Color = new Vector4 (splatBrush.X, splatBrush.Y, -1f / 255f, 1f);
-				//					updateSplatting ();
-				//				}
-			} else if (CurrentState == State.HMEdition) {					
-
-			}
 		}
 		void onSave(object sender, Crow.MouseButtonEventArgs e){
 			Texture.Save (splattingBrushShader.OutputTex, @"splat.png");

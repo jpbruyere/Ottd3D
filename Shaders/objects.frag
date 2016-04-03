@@ -80,8 +80,13 @@ void main(void)
 		gl_FragDepth = gl_FragCoord.z;
 	}else{
 		//normal pass
+			//		const vec3 Diffuse = vec3(1.0, 1.0, 1.0);
+			//const vec3 Ambient = vec3(0.3, 0.3, 0.3);
+			//const vec3 Specular = vec3(1.0,1.0,1.0);
+			//const float Shininess =8.0;
+			//const float ScreenGamma = 1.0;
 
-		vec4 diffTex = texture( tex, texCoord) * Color;
+		vec4 diffTex = texture( tex, texCoord);// * Color;
 		if (diffTex.a == 0.0)
 			discard;
 		vec3 vLight;
@@ -101,10 +106,12 @@ void main(void)
 		float fFogCoord = abs(vEyeSpacePos.z/vEyeSpacePos.w);
 
 		vec3 colorLinear = diffTex.rgb * (Ambient + Idiff) + Ispec;
+		//colorLinear = mix(colorLinear , fogColor.rgb, getFogFactor(fFogCoord));
 
-		float ScreenGama = Shared.x;
-		vec4 gcc = vec4(pow(colorLinear, vec3(1.0/ScreenGama)), diffTex.a);
-		out_frag_color = mix(gcc , fogColor, getFogFactor(fFogCoord));
+		float ScreenGamma = Shared.x;
+
+		out_frag_color = vec4(pow(colorLinear, vec3(1.0/ScreenGamma)), diffTex.a);
+		//out_frag_color = vec4(colorLinear, diffTex.a);
 		gl_FragDepth = gl_FragCoord.z;
 	}
 }

@@ -139,7 +139,6 @@ void main(void)
 		float visibility=1.0;
 		// Sample the shadow map 4 times
 
-		//float bias = 0.01;
 		for (int i=0;i<4;i++)
 		{
 			visibility -= 0.2 * (1.0 - texture (shadowTex,

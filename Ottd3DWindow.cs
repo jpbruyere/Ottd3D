@@ -53,13 +53,13 @@ namespace Ottd3D
 				Shared.Y = (float)pass;
 			}
 		}
-		[StructLayout(LayoutKind.Explicit, Size=64)]
+		[StructLayout(LayoutKind.Explicit, Size=48)]
 		public struct UBOMaterialData
 		{
 			[FieldOffset(0)]public Vector3 Diffuse;
 			[FieldOffset(16)]public Vector3 Ambient;
 			[FieldOffset(32)]public Vector3 Specular;
-			[FieldOffset(48)]public float Shininess;
+			[FieldOffset(44)]public float Shininess;
 
 			public UBOMaterialData(Vector3 kd, Vector3 ka, Vector3 ks, float shininess = 1.0f){
 				Diffuse = kd;
@@ -89,7 +89,7 @@ namespace Ottd3D
 
 
 
-		public GameState CurrentState = GameState.RailTrackEdition;
+		public GameState CurrentState = GameState.Playing;
 		public Track RailTrack = new Track();
 
 		#region  scene matrix and vectors
@@ -129,10 +129,16 @@ namespace Ottd3D
 			1f
 		);
 		UBOMaterialData heolMat = new UBOMaterialData(
-			new Vector3 (0.9f, 0.9f, 0.9f),
-			new Vector3 (0.1f, 0.1f, 0.1f),
-			new Vector3 (0.5f,0.5f,0.5f),
+			new Vector3 (1.0f, 1.0f, 1.0f),
+			new Vector3 (0.01f, 0.01f, 0.01f),
+			new Vector3 (1.0f,1.0f,1.0f),
 			1.0f
+		);
+		UBOMaterialData carMat = new UBOMaterialData(
+			new Vector3 (1.0f, 1.0f, 1.0f),
+			new Vector3 (0.3f, 0.3f, 0.3f),
+			new Vector3 (1.0f, 1.0f, 1.0f),
+			128.0f
 		);
 
 		UniformBufferObject<UBOMaterialData> material;
@@ -146,7 +152,8 @@ namespace Ottd3D
 		}
 
 
-		VertexArrayObject<WeightedMeshData, WeightedInstancedData> landItemsVao, transparentItemsVao;
+		VertexArrayObject<WeightedMeshData, WeightedInstancedData> vaoDeformables, transparentItemsVao;
+		VertexArrayObject<MeshData, InstancedData> vaoObjects;
 		Terrain terrain;
 
 		void initGL(){
@@ -165,6 +172,7 @@ namespace Ottd3D
 		float[] pawnBones = new float[12];
 
 		VAOItem<WeightedInstancedData> heoliennes, heollow, pawn, trees, treesLeave;
+		VAOItem<InstancedData> car;
 
 		void initScene(){
 			heolBones[5] = 10f;
@@ -176,11 +184,22 @@ namespace Ottd3D
 			terrain = new Terrain (ClientRectangle.Size);
 			terrain.gridShader.ShadowMap = shadowMap;
 
-			landItemsVao = new VertexArrayObject<WeightedMeshData, WeightedInstancedData> ();
+			vaoDeformables = new VertexArrayObject<WeightedMeshData, WeightedInstancedData> ();
+			vaoObjects = new VertexArrayObject<MeshData, InstancedData> ();
+
+			car = (VAOItem<InstancedData>)vaoObjects.Add (OBJMeshLoader.Load ("Meshes/car.obj"));
+			car.DiffuseTexture = Tetra.Texture.Load ("Meshes/0000.png");
+			car.InstancedDatas = new InstancedData[nbHeol];
+			for (int i = 0; i < nbHeol; i++) {
+				Vector2 pos = new Vector2 ((float)rnd.Next(0,terrain.GridSize), (float)rnd.Next(0,terrain.GridSize));
+				car.InstancedDatas[i].modelMats = Matrix4.CreateTranslation (pos.X-(pos.X % 4f) + 0.5f, pos.Y-(pos.Y % 4f) + 0.5f, 0.5f);
+			}
+			car.UpdateInstancesData();
+
 
 			nbHeol = 50;
-			trees = (VAOItem<WeightedInstancedData>)landItemsVao.Add (OBJMeshLoader.Load ("Meshes/trees/treesTrunk.obj"));
-			treesLeave = (VAOItem<WeightedInstancedData>)landItemsVao.Add (OBJMeshLoader.Load ("Meshes/trees/treesLeaves.obj"));
+			trees = (VAOItem<WeightedInstancedData>)vaoDeformables.Add (OBJMeshLoader.Load ("Meshes/trees/treesTrunk.obj"));
+			treesLeave = (VAOItem<WeightedInstancedData>)vaoDeformables.Add (OBJMeshLoader.Load ("Meshes/trees/treesLeaves.obj"));
 			trees.DiffuseTexture = Tetra.Texture.Load ("Meshes/trees/treeTrunk.jpg");
 			treesLeave.DiffuseTexture = Tetra.Texture.Load ("Meshes/trees/treeLeaves.png");
 			trees.InstancedDatas = new Tetra.WeightedInstancedData[nbHeol];
@@ -196,7 +215,7 @@ namespace Ottd3D
 			treesLeave.UpdateInstancesData();
 			//HEOLIENNES
 			nbHeol = 5;
-			heoliennes = (VAOItem<WeightedInstancedData>)landItemsVao.Add (OBJMeshLoader.Load ("Meshes/heolienne.obj"));
+			heoliennes = (VAOItem<WeightedInstancedData>)vaoDeformables.Add (OBJMeshLoader.Load ("Meshes/heolienne.obj"));
 			heoliennes.DiffuseTexture = Tetra.Texture.Load ("Meshes/heolienne.png");
 			heoliennes.InstancedDatas = new Tetra.WeightedInstancedData[nbHeol];
 			for (int i = 0; i < nbHeol; i++) {
@@ -213,7 +232,7 @@ namespace Ottd3D
 			}
 			heoliennes.UpdateInstancesData();
 			nbHeol = 5;
-			heollow = (VAOItem<WeightedInstancedData>)landItemsVao.Add (OBJMeshLoader.Load ("Meshes/heolienne_lod0.obj"));
+			heollow = (VAOItem<WeightedInstancedData>)vaoDeformables.Add (OBJMeshLoader.Load ("Meshes/heolienne_lod0.obj"));
 			heollow.DiffuseTexture = Tetra.Texture.Load ("Meshes/heollow.png");
 			heollow.InstancedDatas = new Tetra.WeightedInstancedData[nbHeol];
 			for (int i = 0; i < nbHeol; i++) {
@@ -230,7 +249,7 @@ namespace Ottd3D
 			}
 			heollow.UpdateInstancesData();
 
-			pawn = (VAOItem<WeightedInstancedData>)landItemsVao.Add (OBJMeshLoader.Load ("Meshes/pawn.obj"));
+			pawn = (VAOItem<WeightedInstancedData>)vaoDeformables.Add (OBJMeshLoader.Load ("Meshes/pawn.obj"));
 			pawn.DiffuseTexture = Tetra.Texture.Load ("Meshes/pawn.png");
 			pawn.InstancedDatas = new Tetra.WeightedInstancedData[nbHeol];
 			for (int i = 0; i < nbHeol; i++) {
@@ -244,7 +263,8 @@ namespace Ottd3D
 			pawn.UpdateInstancesData();
 
 			//landItemsVao.ComputeTangents();
-			landItemsVao.BuildBuffers ();
+			vaoDeformables.BuildBuffers ();
+			vaoObjects.BuildBuffers ();
 
 //			const float treezone = 32;
 //			const int treeCount = 50;
@@ -301,20 +321,24 @@ namespace Ottd3D
 			//			GL.Disable (EnableCap.Blend);
 
 			//material.Update (heolMat);
+			material.Update (carMat);
+
+			instancedObjShader.Enable ();
+			vaoObjects.Bind ();
+
+			vaoObjects.Render (PrimitiveType.Triangles);
+
+
+			deformableObjShader.Enable ();
+			vaoDeformables.Bind ();
 			material.Update (heolMat);
-
-
-			objShader.Enable ();
-
-
-			landItemsVao.Bind ();
 			//			landItemsVao.Render (PrimitiveType.Triangles, trees);
 			//			landItemsVao.Render (PrimitiveType.Triangles, treesLeave);
-			objShader.SetBones (heolBones);
-			landItemsVao.Render (PrimitiveType.Triangles, heoliennes);
-			objShader.SetBones (pawnBones);
-			landItemsVao.Render (PrimitiveType.Triangles, pawn);
-			landItemsVao.Unbind ();
+			deformableObjShader.SetBones (heolBones);
+			vaoDeformables.Render (PrimitiveType.Triangles, heollow);
+//			objShader.SetBones (pawnBones);
+//			landItemsVao.Render (PrimitiveType.Triangles, pawn);
+			vaoDeformables.Unbind ();
 
 
 			//			GL.Enable (EnableCap.Blend);
@@ -354,12 +378,12 @@ namespace Ottd3D
 		}
 
 		Random rnd = new Random ();			
-		void addRandomTrees(VertexArrayObject<MeshData, VAOInstancedData> vao,
+		void addRandomTrees(VertexArrayObject<MeshData, InstancedData> vao,
 			int count, string objPath, string diffTexPath, float _scale=1f)
 		{			
-			VAOItem<VAOInstancedData> vaoi = (VAOItem<VAOInstancedData>)vao.Add (OBJMeshLoader.Load (objPath));
+			VAOItem<InstancedData> vaoi = (VAOItem<InstancedData>)vao.Add (OBJMeshLoader.Load (objPath));
 			vaoi.DiffuseTexture = Tetra.Texture.Load(diffTexPath);
-			vaoi.InstancedDatas = new Tetra.VAOInstancedData[count];
+			vaoi.InstancedDatas = new Tetra.InstancedData[count];
 			for (int i = 0; i < count; i++) {				
 				Vector2 pos = new Vector2 ((float)rnd.NextDouble() * terrain.GridSize, (float)rnd.NextDouble() * terrain.GridSize);
 				float scale = (float)(rnd.NextDouble () * 0.002f + 0.004f)*_scale;
@@ -411,16 +435,20 @@ namespace Ottd3D
 
 		#region Shaders
 
-		public static Mat4InstancedShader objShader;
+		public static DeformablesShader deformableObjShader;
+		public static InstancedShader instancedObjShader;
 
 		void initShaders()
 		{
-			objShader = new Mat4InstancedShader ("Shaders/objects.vert", "Shaders/objects.frag");
-			objShader.ShadowMap = shadowMap;
+			deformableObjShader = new DeformablesShader ("Shaders/objects.vert", "Shaders/objects.frag");
+			deformableObjShader.ShadowMap = shadowMap;
+
+			instancedObjShader = new InstancedShader ("Shaders/objInstanced.vert", "Shaders/objects.frag");
+			instancedObjShader.ShadowMap = shadowMap;
 			//objShader.DiffuseTexture = heolienneTex;
 
 			shaderSharedData = new UniformBufferObject<UBOSharedData> (BufferUsageHint.DynamicCopy);
-			shaderSharedData.Datas.Color = new Vector4 (1f, 1f, 1f, 1f);
+			shaderSharedData.Datas.Color = new Vector4 (0.8f,0.8f,0.8f,1.0f);
 			shaderSharedData.Datas.Shared.X = 1.0f;
 			shaderSharedData.Datas.SetPass (ShadingPass.Normal);
 			shaderSharedData.Bind (0);
@@ -453,7 +481,7 @@ namespace Ottd3D
 
 		#endregion
 
-		bool updateGridCache = false;
+		bool queryUpdateGridCache = false;
 
 		public void UpdateViewMatrix()
 		{
@@ -481,9 +509,10 @@ namespace Ottd3D
 				(-eyeDist, eyeDist, -eyeDist,eyeDist, -eyeDist, eyeDist);
 			
 			shadowTexMat = lightView * lightProjection*tmp;
-			
-			updateShadersMatrices ();
+
+			queryUpdateGridCache = true;
 			queryUpdateShadowMap = true;
+			queryUpdateShaderMatices = true;
 //			if (tDepthSort != null) {
 //				killDepthSortThread ();
 //			}
@@ -566,8 +595,10 @@ namespace Ottd3D
 			GL.Enable(EnableCap.Normalize);
 			GL.ShadeModel(ShadingModel.Smooth);
 
+			shaderSharedData.Datas.projection = projection;
+			shaderSharedData.Datas.view = modelview;
 			shaderSharedData.Datas.SetPass (ShadingPass.Normal);
-			updateShadersMatrices ();
+			shaderSharedData.Update ();
 
 			GL.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
 			GL.DrawBuffer (DrawBufferMode.Back);
@@ -613,7 +644,7 @@ namespace Ottd3D
 				renderLightPOV = value;
 				NotifyValueChanged ("RenderLightPOV", renderLightPOV);
 				queryUpdateShaderMatices = true;
-				updateGridCache = true;
+				queryUpdateGridCache = true;
 			}
 		}
 
@@ -679,11 +710,9 @@ namespace Ottd3D
 			
 			if (e.XDelta != 0 || e.YDelta != 0)
 			{
+				terrain.MouseMove(e);
 				NotifyValueChanged("MousePos", MousePos);
 				//selection texture has clientRect size and 4 bytes per pixel, so
-
-				terrain.MouseMove(e);
-
 				switch (CurrentState) {
 				case GameState.Playing:
 					break;
@@ -723,9 +752,9 @@ namespace Ottd3D
 						vEyeTarget -= vH + vV;						
 					}
 					UpdateViewMatrix ();
-					return;
 				}
 			}
+
 		}
 			
 		void Mouse_WheelChanged(object sender, OpenTK.Input.MouseWheelEventArgs e)
@@ -915,7 +944,7 @@ namespace Ottd3D
 				lock (transparentItemsVao.Meshes) {
 					transObjs = transparentItemsVao.Meshes.ToArray();
 				}
-				foreach (VAOItem<VAOInstancedData> item in transObjs.OfType<VAOItem<VAOInstancedData>>()) {
+				foreach (VAOItem<InstancedData> item in transObjs.OfType<VAOItem<InstancedData>>()) {
 					depthSort (item.InstancedDatas);	
 				}
 
@@ -924,11 +953,11 @@ namespace Ottd3D
 			}
 			depthSortingDone = true;
 		}
-		void depthSort(Tetra.VAOInstancedData[] datas)
+		void depthSort(Tetra.InstancedData[] datas)
 		{
 			Vector3 vEye = vEyeTarget + vLook * eyeDist;
 			Array.Sort(datas,
-				delegate(Tetra.VAOInstancedData x, Tetra.VAOInstancedData y) {
+				delegate(Tetra.InstancedData x, Tetra.InstancedData y) {
 					return (new Vector2(y.modelMats.Row3.X, y.modelMats.Row3.Y) - vEye.Xy).LengthFast.
 						CompareTo	((new Vector2(x.modelMats.Row3.X, x.modelMats.Row3.Y) - vEye.Xy).LengthFast); });
 			
@@ -963,24 +992,24 @@ namespace Ottd3D
 			
 			base.OnUpdateFrame (e);
 
-			if (Keyboard [OpenTK.Input.Key.ShiftLeft]) {
-				float MoveSpeed = 10f;
-				//light movment
-				if (Keyboard [OpenTK.Input.Key.Up])
-					vLight.X -= MoveSpeed;
-				else if (Keyboard [OpenTK.Input.Key.Down])
-					vLight.X += MoveSpeed;
-				else if (Keyboard [OpenTK.Input.Key.Left])
-					vLight.Y -= MoveSpeed;
-				else if (Keyboard [OpenTK.Input.Key.Right])
-					vLight.Y += MoveSpeed;
-				else if (Keyboard [OpenTK.Input.Key.PageUp])
-					vLight.Z += MoveSpeed;
-				else if (Keyboard [OpenTK.Input.Key.PageDown])
-					vLight.Z -= MoveSpeed;
-				//updateShadersMatrices ();
-				//GL.Light (LightName.Light0, LightParameter.Position, vLight);
-			}
+//			if (Keyboard [OpenTK.Input.Key.ShiftLeft]) {
+//				float MoveSpeed = 10f;
+//				//light movment
+//				if (Keyboard [OpenTK.Input.Key.Up])
+//					vLight.X -= MoveSpeed;
+//				else if (Keyboard [OpenTK.Input.Key.Down])
+//					vLight.X += MoveSpeed;
+//				else if (Keyboard [OpenTK.Input.Key.Left])
+//					vLight.Y -= MoveSpeed;
+//				else if (Keyboard [OpenTK.Input.Key.Right])
+//					vLight.Y += MoveSpeed;
+//				else if (Keyboard [OpenTK.Input.Key.PageUp])
+//					vLight.Z += MoveSpeed;
+//				else if (Keyboard [OpenTK.Input.Key.PageDown])
+//					vLight.Z -= MoveSpeed;
+//				//updateShadersMatrices ();
+//				//GL.Light (LightName.Light0, LightParameter.Position, vLight);
+//			}
 
 //			if (depthSortingDone) {
 //				foreach (Tetra.VAOItem<Tetra.VAOInstancedData> item in transparentItemsVao.Meshes) 
@@ -1000,13 +1029,22 @@ namespace Ottd3D
 			if (queryGammaUpdate) {
 				queryGammaUpdate = false;
 				shaderSharedData.Update ();
-				updateGridCache = true;
+				queryUpdateGridCache = true;
 			}
+
+			//if (queryUpdateShadowMap) {
+				queryUpdateShadowMap = false;
 				
+			//}
+
+			updateShadowMap ();
+
 			material.Update (terrainMat);
-			terrain.Update (this, updateGridCache);
-			updateGridCache = false;
-				
+			terrain.Update (this, queryUpdateGridCache);
+			queryUpdateGridCache = false;
+
+
+
 			if (queryTextureViewerUpdate || (autoUpdate && frameCpt % 60 == 0)) {
 				queryTextureViewerUpdate = false;
 
@@ -1056,10 +1094,6 @@ namespace Ottd3D
 		}
 		public override void OnRender (FrameEventArgs e)
 		{
-			if (queryUpdateShadowMap) {
-				queryUpdateShadowMap = false;
-				updateShadowMap ();
-			}
 
 			drawScene ();
 		}

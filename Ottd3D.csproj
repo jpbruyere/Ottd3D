@@ -99,11 +99,12 @@
     </Compile>
     <Compile Include="Ottd3DWindow.cs" />
     <Compile Include="Terrain.cs" />
-    <Compile Include="Shaders\Mat4InstancedShader.cs" />
     <Compile Include="Shaders\CacheRenderingShader.cs" />
     <Compile Include="Shaders\CircleShader.cs" />
     <Compile Include="TestDynShader.cs" />
     <Compile Include="ui\ShaderEditorWindow.cs" />
+    <Compile Include="Shaders\DeformablesShader.cs" />
+    <Compile Include="Shaders\InstancedShader.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="ui\" />
@@ -264,6 +265,15 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="Shaders\cache.frag">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Meshes\car.obj">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Meshes\0000.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Shaders\objInstanced.vert">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
