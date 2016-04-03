@@ -229,28 +229,36 @@ namespace Ottd3D
 
 		public Ottd3D.VertexDispShader gridShader;
 		Tetra.Shader cacheShader;
-
+		public void RenderForShadowPass(){
+			gridShader.Enable ();
+			gridMesh.Render(PrimitiveType.TriangleStrip);
+		}
 		void draw(){			
 			GL.Clear (ClearBufferMask.ColorBufferBit|ClearBufferMask.DepthBufferBit);
 
+			GL.Disable (EnableCap.CullFace);
 			GL.DepthMask (false);
 			skybox.Render ();
 			GL.DepthMask (true);
+			GL.Enable (EnableCap.CullFace);
 
 			gridShader.Enable ();
-
+			GL.ActiveTexture (TextureUnit.Texture7);
+			GL.BindTexture(TextureTarget.Texture2D, gridShader.ShadowMap);
 			//4th component of selection texture is used as coordinate, not as alpha
 			GL.Disable (EnableCap.AlphaTest);
 			GL.Disable (EnableCap.Blend);
 			GL.Enable (EnableCap.DepthTest);
-			GL.Enable (EnableCap.CullFace);
-			GL.CullFace (CullFaceMode.Back);
+
+
 
 			if (wireframe)				
 				gridMesh.Render(PrimitiveType.LineStrip);
 			else
 				gridMesh.Render(PrimitiveType.TriangleStrip);
-			GL.Disable (EnableCap.CullFace);
+			
+			GL.ActiveTexture (TextureUnit.Texture7);
+			GL.BindTexture(TextureTarget.Texture2D, 0);
 		}
 		void initShaders(){
 			gridShader = new Ottd3D.VertexDispShader 
@@ -364,9 +372,9 @@ namespace Ottd3D
 
 			selectionMap = new byte[CacheSize.Width * CacheSize.Height*4];
 
-			cacheQuad = new QuadVAO (0, 0, 1, 1, 0, 1, 1, -1);
+			cacheQuad = new QuadVAO (0, 0, 1, 1, 0, 0, 1, 1);
 			cacheShader.MVP = Matrix4.CreateOrthographicOffCenter 
-				(0, 1, 0, 1, 0, 1);
+				(0, 1, 1, 0, 0, 1);
 
 			initGridFbo ();
 		}
@@ -386,7 +394,6 @@ namespace Ottd3D
 			GL.BindTexture (TextureTarget.Texture2D, 0);
 			if (depthTest)
 				GL.Enable (EnableCap.DepthTest);
-			GL.DepthFunc (DepthFunction.Lequal);
 		}
 
 		#region FBO

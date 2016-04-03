@@ -35,9 +35,10 @@ namespace Ottd3D
 		protected int   mapSizeLoc, heightScaleLoc,
 						selRadiusLoc, selCenterLoc, selColorLoc;
 
-		public int DisplacementMap;
-		public int DiffuseTexture;
-		public int SplatTexture;
+		public int	DisplacementMap,
+					DiffuseTexture,
+					SplatTexture,
+					ShadowMap;
 
 		Vector2 mapSize;
 		float heightScale = 1f;
@@ -85,7 +86,8 @@ namespace Ottd3D
 			base.BindSamplesSlots ();
 
 			GL.Uniform1(GL.GetUniformLocation (pgmId, "heightMap"),1);
-			GL.Uniform1(GL.GetUniformLocation (pgmId, "splatTex"),2);
+			GL.Uniform1(GL.GetUniformLocation (pgmId, "splatTex"),5);
+			GL.Uniform1(GL.GetUniformLocation (pgmId, "shadowTex"),7);
 		}
 		public override void Enable ()
 		{
@@ -97,7 +99,8 @@ namespace Ottd3D
 			GL.Uniform2(selCenterLoc, selCenter);
 			GL.Uniform4(selColorLoc, selColor);
 
-			GL.ActiveTexture (TextureUnit.Texture2);
+
+			GL.ActiveTexture (TextureUnit.Texture5);
 			GL.BindTexture(TextureTarget.Texture2D, SplatTexture);
 			GL.ActiveTexture (TextureUnit.Texture1);
 			GL.BindTexture(TextureTarget.Texture2D, DisplacementMap);

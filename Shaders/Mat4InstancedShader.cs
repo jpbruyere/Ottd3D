@@ -11,13 +11,14 @@ namespace Ottd3D
 		public Mat4InstancedShader (string vertResPath, string fragResPath = null, string geomResPath = null)
 			: base(vertResPath, fragResPath, geomResPath){}
 
-		public int DiffuseTexture, NormalTexture,DepthTexture;
+		public int DiffuseTexture, NormalTexture, ShadowMap;
 
 		protected override void BindSamplesSlots ()
 		{
 			base.BindSamplesSlots ();
 			GL.Uniform1(GL.GetUniformLocation (pgmId, "normal"), 1);
 			GL.Uniform1(GL.GetUniformLocation (pgmId, "depth"), 2);
+			GL.Uniform1(GL.GetUniformLocation (pgmId, "shadowTex"),7);
 		}
 		protected override void BindVertexAttributes ()
 		{

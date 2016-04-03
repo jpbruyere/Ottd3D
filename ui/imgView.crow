@@ -16,6 +16,7 @@
 						<RadioButton Name="CS" Caption="Selection texture" Checked="onSelectViewedTex"/>
 						<RadioButton Name="BBC" Caption="BackBuff Color" Checked="onSelectViewedTex"/>
 						<RadioButton Name="BBD" Caption="BackBuff Depth" Checked="onSelectViewedTex"/>
+						<RadioButton Name="SH" Caption="ShadowMap" Checked="onSelectViewedTex"/>
 						<RadioButton Name="HM" Caption="Height Map" Checked="onSelectViewedTex"/>
 						<RadioButton Name="ST" Caption="Splat texture" Checked="onSelectViewedTex"/>
 					</VerticalStack>

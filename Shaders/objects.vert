@@ -19,9 +19,10 @@ layout (std140) uniform block_data{
 	mat4 Projection;
 	mat4 ModelView;
 	mat4 Normal;
+	mat4 shadowTexMat;
 	vec4 lightPos;
 	vec4 Color;
-	float ScreenGama;
+	vec4 Shared; //x=ScreenGama, y=ShadingPass
 };
 
 uniform vec3 bones[4];

@@ -25,5 +25,6 @@
 			</Border>
 		</Popper>
 		<Spinner SmallIncrement="0,1" Value="{²ScreenGamma}" Width="150"/>
+		<CheckBox IsChecked="{²RenderLightPOV}" Caption="Light POV"/>
 	</HorizontalStack>
 </Border>

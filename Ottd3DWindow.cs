@@ -35,6 +35,7 @@ namespace Ottd3D
 			Playing,
 			RailTrackEdition,
 		}
+		public enum ShadingPass { Normal, Shadow };
 
 		[StructLayout(LayoutKind.Sequential)]
 		public struct UBOSharedData
@@ -42,9 +43,15 @@ namespace Ottd3D
 			public Matrix4 projection;
 			public Matrix4 view;
 			public Matrix4 normal;
+			public Matrix4 shadowTexMat;
 			public Vector4 LightPosition;
 			public Vector4 Color;
-			public float ScreenGamma;
+			public Vector4 Shared;		//x ScreenGamma;
+										//y pass => 0 normal pass
+										//		 => 1 Shadow pass
+			public void SetPass(ShadingPass pass){
+				Shared.Y = (float)pass;
+			}
 		}
 		[StructLayout(LayoutKind.Explicit, Size=64)]
 		public struct UBOMaterialData
@@ -65,19 +72,17 @@ namespace Ottd3D
 		public struct UBOFogData
 		{
 			public Vector4 fogColor;
-			public float fStart; // This is only for linear fog
-			public float fEnd; // This is only for linear fog
-			public float fDensity; // For exp and exp2 equation   
-			public int iEquation; // 0 = linear, 1 = exp, 2 = exp2
+			public Vector4 fog;
 
 			public static UBOFogData CreateUBOFogData()
 			{
 				UBOFogData tmp;
 				tmp.fogColor = new Vector4(0.7f,0.7f,0.7f,1.0f);
-				tmp.fStart = 100.0f; // This is only for linear fog
-				tmp.fEnd = 300.0f; // This is only for linear fog
-				tmp.fDensity = 0.001f; // For exp and exp2 equation   
-				tmp.iEquation = 1; // 0 = linear, 1 = exp, 2 = exp2
+				tmp.fog = new Vector4(
+					100.0f, // This is only for linear fog
+					300.0f, // This is only for linear fog
+					0.005f, // For exp and exp2 equation   
+					1f); // 0 = linear, 1 = exp, 2 = exp2
 				return tmp;
 			}
 		}
@@ -90,7 +95,6 @@ namespace Ottd3D
 		#region  scene matrix and vectors
 		public static Matrix4 modelview;
 		public static Matrix4 projection;
-		public static int[] viewport = new int[4];
 
 		public float EyeDist { 
 			get { return eyeDist; } 
@@ -112,6 +116,11 @@ namespace Ottd3D
 		float RotationSpeed = 0.005f;
 
 		public Vector4 vLight = new Vector4 (0.5f, 0.5f, -1.0f, 0f);
+		public static Matrix4 lightProjection, lightView;
+		int lightZFar = 20;
+		int lightZNear = -20;
+		float lightProjSize = 10f;
+
 
 		UBOMaterialData terrainMat = new UBOMaterialData(
 			new Vector3 (0.8f, 0.8f, 0.8f),
@@ -141,8 +150,10 @@ namespace Ottd3D
 		Terrain terrain;
 
 		void initGL(){
+			GL.Enable(EnableCap.CullFace);
+			GL.CullFace(CullFaceMode.Back);
 			GL.Enable(EnableCap.DepthTest);
-			GL.DepthFunc(DepthFunction.Less);
+			GL.DepthFunc (DepthFunction.Lequal);
 			//			GL.Enable(EnableCap.CullFace);
 			GL.PrimitiveRestartIndex (int.MaxValue);
 			GL.Enable (EnableCap.PrimitiveRestart);
@@ -161,7 +172,10 @@ namespace Ottd3D
 			pawnBones [5] = 0.90812f;
 
 			int nbHeol = 5;
+
 			terrain = new Terrain (ClientRectangle.Size);
+			terrain.gridShader.ShadowMap = shadowMap;
+
 			landItemsVao = new VertexArrayObject<WeightedMeshData, WeightedInstancedData> ();
 
 			nbHeol = 50;
@@ -280,20 +294,22 @@ namespace Ottd3D
 
 			terrain.Render ();
 
-//			GL.Disable (EnableCap.Blend);
+			drawLandItems ();
+
+		}
+		void drawLandItems(){
+			//			GL.Disable (EnableCap.Blend);
 
 			//material.Update (heolMat);
 			material.Update (heolMat);
 
 
 			objShader.Enable ();
-			GL.DepthFunc (DepthFunction.Lequal);
-
 
 
 			landItemsVao.Bind ();
-//			landItemsVao.Render (PrimitiveType.Triangles, trees);
-//			landItemsVao.Render (PrimitiveType.Triangles, treesLeave);
+			//			landItemsVao.Render (PrimitiveType.Triangles, trees);
+			//			landItemsVao.Render (PrimitiveType.Triangles, treesLeave);
 			objShader.SetBones (heolBones);
 			landItemsVao.Render (PrimitiveType.Triangles, heoliennes);
 			objShader.SetBones (pawnBones);
@@ -304,35 +320,35 @@ namespace Ottd3D
 			//			GL.Enable (EnableCap.Blend);
 			//			GL.Enable (EnableCap.AlphaTest);
 
-//			transparentItemsVao.Bind ();
-//
-//			//GL.Disable (EnableCap.Blend);
-//			//GL.BlendFunc(BlendingFactorSrc.One, BlendingFactorDest.Zero );
-//			//			GL.BlendFunc (BlendingFactorSrc.SrcAlpha, BlendingFactorDest.OneMinusSrcAlpha);
-//			//			GL.DepthMask (false);
-//
-//
-//			//			GL.AlphaFunc (AlphaFunction.Greater, 0.0f);
-//			//			GL.DepthMask (false);
-//
-//			GL.Enable (EnableCap.Blend);
-//			//GL.Disable (EnableCap.DepthTest);
-//
-//			transparentItemsVao.Render (PrimitiveType.Triangles);
-//
-//			//GL.Enable (EnableCap.DepthTest);
-//
-//			//			GL.AlphaFunc (AlphaFunction.Equal, 1.0f);
-//			//			GL.DepthMask (true);
-//			//			transparentItemsVao.Render (PrimitiveType.Triangles);
-//
-//			//GL.Disable (EnableCap.Blend);
-//			//GL.Disable (EnableCap.AlphaTest);
-//			//
-//			//			GL.BlendFunc (BlendingFactorSrc.SrcAlpha, BlendingFactorDest.OneMinusSrcAlpha);
-//
-//
-//			transparentItemsVao.Unbind ();
+			//			transparentItemsVao.Bind ();
+			//
+			//			//GL.Disable (EnableCap.Blend);
+			//			//GL.BlendFunc(BlendingFactorSrc.One, BlendingFactorDest.Zero );
+			//			//			GL.BlendFunc (BlendingFactorSrc.SrcAlpha, BlendingFactorDest.OneMinusSrcAlpha);
+			//			//			GL.DepthMask (false);
+			//
+			//
+			//			//			GL.AlphaFunc (AlphaFunction.Greater, 0.0f);
+			//			//			GL.DepthMask (false);
+			//
+			//			GL.Enable (EnableCap.Blend);
+			//			//GL.Disable (EnableCap.DepthTest);
+			//
+			//			transparentItemsVao.Render (PrimitiveType.Triangles);
+			//
+			//			//GL.Enable (EnableCap.DepthTest);
+			//
+			//			//			GL.AlphaFunc (AlphaFunction.Equal, 1.0f);
+			//			//			GL.DepthMask (true);
+			//			//			transparentItemsVao.Render (PrimitiveType.Triangles);
+			//
+			//			//GL.Disable (EnableCap.Blend);
+			//			//GL.Disable (EnableCap.AlphaTest);
+			//			//
+			//			//			GL.BlendFunc (BlendingFactorSrc.SrcAlpha, BlendingFactorDest.OneMinusSrcAlpha);
+			//
+			//
+			//			transparentItemsVao.Unbind ();
 
 			//RailTrack.Render ();			
 		}
@@ -400,12 +416,13 @@ namespace Ottd3D
 		void initShaders()
 		{
 			objShader = new Mat4InstancedShader ("Shaders/objects.vert", "Shaders/objects.frag");
-
+			objShader.ShadowMap = shadowMap;
 			//objShader.DiffuseTexture = heolienneTex;
 
 			shaderSharedData = new UniformBufferObject<UBOSharedData> (BufferUsageHint.DynamicCopy);
 			shaderSharedData.Datas.Color = new Vector4 (1f, 1f, 1f, 1f);
-			shaderSharedData.Datas.ScreenGamma = 1.0f;
+			shaderSharedData.Datas.Shared.X = 1.0f;
+			shaderSharedData.Datas.SetPass (ShadingPass.Normal);
 			shaderSharedData.Bind (0);
 
 			fogData = new UniformBufferObject<UBOFogData> (
@@ -416,13 +433,18 @@ namespace Ottd3D
 			material.Bind (2);
 		}
 			
-
-		void updateShadersMatrices(){			
-			terrain.UpdateMVP (projection, modelview, vLook);
-
-			shaderSharedData.Datas.projection = projection;
-			shaderSharedData.Datas.view = modelview;
+		void updateShadersMatrices(){
+			if (renderLightPOV) {
+				terrain.UpdateMVP (lightProjection, lightView, vLook);
+				shaderSharedData.Datas.projection = lightProjection;
+				shaderSharedData.Datas.view = lightView;
+			} else {
+				terrain.UpdateMVP (projection, modelview, vLook);
+				shaderSharedData.Datas.projection = projection;
+				shaderSharedData.Datas.view = modelview;
+			}
 			shaderSharedData.Datas.normal = modelview.Inverted();
+			shaderSharedData.Datas.shadowTexMat = shadowTexMat;
 			shaderSharedData.Datas.normal.Transpose ();
 			shaderSharedData.Datas.LightPosition = Vector4.Transform(vLight, modelview);
 
@@ -440,10 +462,28 @@ namespace Ottd3D
 			projection = Matrix4.CreatePerspectiveFieldOfView (fovY, r.Width / (float)r.Height, zNear, zFar);
 			Vector3 vEye = vEyeTarget + vLook * eyeDist;
 			modelview = Matrix4.LookAt(vEye, vEyeTarget, Vector3.UnitZ);
-			GL.GetInteger(GetPName.Viewport, viewport);
 
+			if (vLight.W == 0)
+				lightView = Matrix4.LookAt(
+					vEyeTarget - vLight.Xyz.Normalized(),
+					vEyeTarget, Vector3.UnitZ);
+			else
+				lightView = Matrix4.LookAt(
+					vEyeTarget + vLight.Xyz,
+					vEyeTarget, Vector3.UnitZ);
+//			Matrix4 tmp = new Matrix4(
+//				0.5f, 0.0f, 0.0f, 0.0f, 
+//				0.0f, 0.5f, 0.0f, 0.0f,
+//				0.0f, 0.0f, 0.5f, 0.0f,
+//				0.5f, 0.5f, 0.5f, 1.0f);
+			Matrix4 tmp = Matrix4.CreateScale(0.5f) * Matrix4.CreateTranslation(0.5f,0.5f,0.5f);
+			lightProjection = Matrix4.CreateOrthographicOffCenter
+				(-eyeDist, eyeDist, -eyeDist,eyeDist, -eyeDist, eyeDist);
+			
+			shadowTexMat = lightView * lightProjection*tmp;
+			
 			updateShadersMatrices ();
-
+			queryUpdateShadowMap = true;
 //			if (tDepthSort != null) {
 //				killDepthSortThread ();
 //			}
@@ -451,10 +491,90 @@ namespace Ottd3D
 //			tDepthSort.IsBackground = true;
 //			tDepthSort.Start ();
 //			tDepthSort.Join ();
-
-
 		}			
+
+
+		#region shadow map
+
+		const int SHADOW_MAP_SIZE = 2048;
+		float bias = 0.0005f;
+		Matrix4 shadowTexMat;
+
+		int shadowMap, fboShadow;
+
+		bool queryUpdateShadowMap = false;
+
+		void initShadowMap()
+		{
 			
+			GL.GenTextures(1, out shadowMap);
+			GL.BindTexture(TextureTarget.Texture2D, shadowMap);
+
+			GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Linear);
+			GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Linear);
+			GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (int)TextureWrapMode.ClampToEdge);
+			GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (int)TextureWrapMode.ClampToEdge);
+			GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureCompareMode, (int)TextureCompareMode.CompareRToTexture);
+			GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureCompareFunc, (int)All.Lequal);
+			//GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.DepthTextureMode, (int)All.Intensity);
+			GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.DepthComponent32f, SHADOW_MAP_SIZE, SHADOW_MAP_SIZE, 0, OpenTK.Graphics.OpenGL.PixelFormat.DepthComponent, PixelType.Float, IntPtr.Zero);
+
+			GL.BindTexture(TextureTarget.Texture2D, 0);
+			GL.ActiveTexture(TextureUnit.Texture0);
+
+			GL.GenFramebuffers(1, out fboShadow);
+			GL.BindFramebuffer(FramebufferTarget.Framebuffer, fboShadow);
+			GL.DrawBuffer (DrawBufferMode.None);
+			GL.FramebufferTexture2D(FramebufferTarget.Framebuffer, FramebufferAttachment.DepthAttachment, TextureTarget.Texture2D, shadowMap, 0);
+
+			if (GL.CheckFramebufferStatus(FramebufferTarget.Framebuffer) != FramebufferErrorCode.FramebufferComplete)
+			{
+				throw new Exception(GL.CheckFramebufferStatus(FramebufferTarget.Framebuffer).ToString());
+			}
+				
+			GL.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
+		}
+
+		void updateShadowMap()
+		{
+			GL.BindFramebuffer(FramebufferTarget.Framebuffer, fboShadow);
+			GL.DrawBuffer (DrawBufferMode.None);
+
+			//terrain.UpdateMVP (lightProjection, lightView, vLook);
+			shaderSharedData.Datas.projection = lightProjection;
+			shaderSharedData.Datas.view = lightView;
+			shaderSharedData.Datas.SetPass (ShadingPass.Shadow);
+			shaderSharedData.Update ();
+
+			int[] viewport = new int[4];
+			GL.GetInteger (GetPName.Viewport, viewport);
+			GL.Viewport(0, 0, SHADOW_MAP_SIZE, SHADOW_MAP_SIZE);
+
+			GL.Clear(ClearBufferMask.DepthBufferBit);
+			GL.Disable(EnableCap.Normalize);
+			GL.ShadeModel(ShadingModel.Flat);
+			GL.CullFace(CullFaceMode.Front);
+
+
+			terrain.RenderForShadowPass ();
+
+			drawLandItems();
+
+			//GL.ColorMask(true, true, true, true);
+			GL.ShadeModel(ShadingModel.Smooth);
+			GL.CullFace(CullFaceMode.Back);
+			GL.Enable(EnableCap.Normalize);
+			GL.ShadeModel(ShadingModel.Smooth);
+
+			shaderSharedData.Datas.SetPass (ShadingPass.Normal);
+			updateShadersMatrices ();
+
+			GL.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
+			GL.DrawBuffer (DrawBufferMode.Back);
+			GL.Viewport (viewport [0], viewport [1], viewport [2], viewport [3]);
+		}
+		#endregion
+
 		#region Interface
 		void initInterface()
 		{
@@ -473,27 +593,47 @@ namespace Ottd3D
 
 			Crow.CompilerServices.ResolveBindings (this.Bindings);
 
-			editedShader = terrain.gridShader;
-			//ShaderSource = editedShader.vertSource;
-
 		}
 
-		Tetra.Shader editedShader;
 
 		string viewedImgPath = @"tmp.png";
 		int viewedTexture;
 		volatile bool
+			renderLightPOV = false,
+			queryUpdateShaderMatices = false,
 			queryTextureViewerUpdate = false, 
 			queryGammaUpdate = false,
 			autoUpdate = false;
 
-		public float ScreenGamma {
-			get { return shaderSharedData.Datas.ScreenGamma; }
+		public bool RenderLightPOV {
+			get { return renderLightPOV; }
 			set {
-				if (value == shaderSharedData.Datas.ScreenGamma)
+				if (value == renderLightPOV)
+					return;
+				renderLightPOV = value;
+				NotifyValueChanged ("RenderLightPOV", renderLightPOV);
+				queryUpdateShaderMatices = true;
+				updateGridCache = true;
+			}
+		}
+
+		public bool AutoUpdate {
+			get { return autoUpdate; }
+			set {
+				if (value == autoUpdate)
+					return;
+				autoUpdate = value;
+				NotifyValueChanged ("AutoUpdate", autoUpdate);
+			}
+		}
+
+		public float ScreenGamma {
+			get { return shaderSharedData.Datas.Shared.X; }
+			set {
+				if (value == shaderSharedData.Datas.Shared.X)
 					return;	
-				shaderSharedData.Datas.ScreenGamma = value;
-				NotifyValueChanged ("ScreenGamma", shaderSharedData.Datas.ScreenGamma);
+				shaderSharedData.Datas.Shared.X = value;
+				NotifyValueChanged ("ScreenGamma", shaderSharedData.Datas.Shared.X);
 				queryGammaUpdate = true;
 			}
 		}
@@ -636,6 +776,7 @@ namespace Ottd3D
 			}
 		}
 		#endregion
+
 		void onShowWindow (object sender, EventArgs e){
 			string path = "";
 			object data = this;
@@ -709,6 +850,9 @@ namespace Ottd3D
 		{
 			GraphicObject g = sender as GraphicObject;
 			switch (g.Name) {
+			case "SH":
+				viewedTexture = shadowMap;
+				break;
 			case "HM":
 				viewedTexture = terrain.hmGenerator.OutputTex;
 				break;
@@ -799,6 +943,8 @@ namespace Ottd3D
 
 			initGL ();
 
+			initShadowMap ();
+
 			initShaders ();
 
 			initScene ();
@@ -846,13 +992,17 @@ namespace Ottd3D
 			Animation.ProcessAnimations ();
 			animate ();
 
+			if (queryUpdateShaderMatices) {
+				queryUpdateShaderMatices = false;
+				updateShadersMatrices ();
+			}
 
 			if (queryGammaUpdate) {
 				queryGammaUpdate = false;
 				shaderSharedData.Update ();
 				updateGridCache = true;
 			}
-
+				
 			material.Update (terrainMat);
 			terrain.Update (this, updateGridCache);
 			updateGridCache = false;
@@ -863,7 +1013,7 @@ namespace Ottd3D
 				if (viewedTexture < 0) {					
 					GL.ReadBuffer (ReadBufferMode.Back);
 					if (viewedTexture == -1) {
-						// save backbuffer
+						// save backbuffer color
 						using (System.Drawing.Bitmap bmp = new System.Drawing.Bitmap (ClientSize.Width, ClientSize.Height, System.Drawing.Imaging.PixelFormat.Format32bppArgb)) {
 							System.Drawing.Imaging.BitmapData bmpData = bmp.LockBits (
 								                                            new System.Drawing.Rectangle (0, 0, ClientSize.Width, ClientSize.Height), System.Drawing.Imaging.ImageLockMode.WriteOnly, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
@@ -906,6 +1056,11 @@ namespace Ottd3D
 		}
 		public override void OnRender (FrameEventArgs e)
 		{
+			if (queryUpdateShadowMap) {
+				queryUpdateShadowMap = false;
+				updateShadowMap ();
+			}
+
 			drawScene ();
 		}
 		#endregion
@@ -940,6 +1095,7 @@ namespace Ottd3D
 			}
 			GL.ClearColor (0f, 0f, 0f, 0f);
 			GL.Clear (ClearBufferMask.ColorBufferBit| ClearBufferMask.DepthBufferBit);
+
 			drawScene ();
 			SwapBuffers ();
 
