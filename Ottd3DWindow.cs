@@ -81,7 +81,7 @@ namespace Ottd3D
 				tmp.fog = new Vector4(
 					100.0f, // This is only for linear fog
 					300.0f, // This is only for linear fog
-					0.005f, // For exp and exp2 equation   
+					0.008f, // For exp and exp2 equation   
 					1f); // 0 = linear, 1 = exp, 2 = exp2
 				return tmp;
 			}
@@ -112,7 +112,7 @@ namespace Ottd3D
 		float eyeDist = 100;
 		float eyeDistTarget = 100f;
 		float MoveSpeed = 0.004f;
-		float ZoomSpeed = 10.0f;
+		float ZoomSpeed = 2.0f;
 		float RotationSpeed = 0.005f;
 
 		public Vector4 vLight = new Vector4 (0.5f, 0.5f, -1.0f, 0f);
@@ -192,45 +192,45 @@ namespace Ottd3D
 			car.InstancedDatas = new InstancedData[nbHeol];
 			for (int i = 0; i < nbHeol; i++) {
 				Vector2 pos = new Vector2 ((float)rnd.Next(0,terrain.GridSize), (float)rnd.Next(0,terrain.GridSize));
-				car.InstancedDatas[i].modelMats = Matrix4.CreateTranslation (pos.X-(pos.X % 4f) + 0.5f, pos.Y-(pos.Y % 4f) + 0.5f, 0.5f);
+				car.InstancedDatas[i].modelMats = Matrix4.CreateScale(0.2f) * Matrix4.CreateTranslation (pos.X-(pos.X % 4f) + 0.5f, pos.Y-(pos.Y % 4f) + 0.5f, 0.1f);
 			}
 			car.UpdateInstancesData();
 
 
 			nbHeol = 50;
-			trees = (VAOItem<WeightedInstancedData>)vaoDeformables.Add (OBJMeshLoader.Load ("Meshes/trees/treesTrunk.obj"));
-			treesLeave = (VAOItem<WeightedInstancedData>)vaoDeformables.Add (OBJMeshLoader.Load ("Meshes/trees/treesLeaves.obj"));
-			trees.DiffuseTexture = Tetra.Texture.Load ("Meshes/trees/treeTrunk.jpg");
-			treesLeave.DiffuseTexture = Tetra.Texture.Load ("Meshes/trees/treeLeaves.png");
-			trees.InstancedDatas = new Tetra.WeightedInstancedData[nbHeol];
-			treesLeave.InstancedDatas = new Tetra.WeightedInstancedData[nbHeol];
-			for (int i = 0; i < nbHeol; i++) {
-				Vector2 pos = new Vector2 ((float)rnd.Next(0,terrain.GridSize), (float)rnd.Next(0,terrain.GridSize));
-				float angle = (float)(rnd.NextDouble() * Math.PI);
-				trees.InstancedDatas[i].modelMats = Matrix4.CreateRotationZ(angle) * Matrix4.CreateScale(4f) * Matrix4.CreateTranslation (pos.X-(pos.X % 4f) + 0.5f, pos.Y-(pos.Y % 4f) + 0.5f, 0f);
-				treesLeave.InstancedDatas [i].modelMats = trees.InstancedDatas [i].modelMats;
-			}
-			trees.UpdateInstancesData();
-
-			treesLeave.UpdateInstancesData();
+//			trees = (VAOItem<WeightedInstancedData>)vaoDeformables.Add (OBJMeshLoader.Load ("Meshes/trees/treesTrunk.obj"));
+//			treesLeave = (VAOItem<WeightedInstancedData>)vaoDeformables.Add (OBJMeshLoader.Load ("Meshes/trees/treesLeaves.obj"));
+//			trees.DiffuseTexture = Tetra.Texture.Load ("Meshes/trees/treeTrunk.jpg");
+//			treesLeave.DiffuseTexture = Tetra.Texture.Load ("Meshes/trees/treeLeaves.png");
+//			trees.InstancedDatas = new Tetra.WeightedInstancedData[nbHeol];
+//			treesLeave.InstancedDatas = new Tetra.WeightedInstancedData[nbHeol];
+//			for (int i = 0; i < nbHeol; i++) {
+//				Vector2 pos = new Vector2 ((float)rnd.Next(0,terrain.GridSize), (float)rnd.Next(0,terrain.GridSize));
+//				float angle = (float)(rnd.NextDouble() * Math.PI);
+//				trees.InstancedDatas[i].modelMats = Matrix4.CreateRotationZ(angle) * Matrix4.CreateScale(4f) * Matrix4.CreateTranslation (pos.X-(pos.X % 4f) + 0.5f, pos.Y-(pos.Y % 4f) + 0.5f, 0f);
+//				treesLeave.InstancedDatas [i].modelMats = trees.InstancedDatas [i].modelMats;
+//			}
+//			trees.UpdateInstancesData();
+//
+//			treesLeave.UpdateInstancesData();
 			//HEOLIENNES
 			nbHeol = 5;
-			heoliennes = (VAOItem<WeightedInstancedData>)vaoDeformables.Add (OBJMeshLoader.Load ("Meshes/heolienne.obj"));
-			heoliennes.DiffuseTexture = Tetra.Texture.Load ("Meshes/heolienne.png");
-			heoliennes.InstancedDatas = new Tetra.WeightedInstancedData[nbHeol];
-			for (int i = 0; i < nbHeol; i++) {
-				Vector2 pos = new Vector2 ((float)rnd.Next(0,terrain.GridSize), (float)rnd.Next(0,terrain.GridSize));
-				heoliennes.InstancedDatas[i].modelMats = Matrix4.CreateTranslation (pos.X-(pos.X % 4f) + 0.5f, pos.Y-(pos.Y % 4f) + 0.5f, 0f);
-				heoliennes.InstancedDatas [i].quat0 = Quaternion.Identity;
-				heoliennes.InstancedDatas [i].quat1 = Quaternion.Identity;
-				heoliennes.InstancedDatas [i].quat2 = Quaternion.Identity;
-				heoliennes.InstancedDatas [i].quat3 = Quaternion.Identity;
-//				heoliennes.InstancedDatas [i].bpos0 = new Vector4 (0f, 0f, 0f, 0f);
-//				heoliennes.InstancedDatas [i].bpos1 = new Vector4 (0f, 0f, 0f, 0f);
-//				heoliennes.InstancedDatas [i].bpos2 = new Vector4 (0f, 0f, 0f, 0f);
-//				heoliennes.InstancedDatas [i].bpos3 = new Vector4 (0f, 0f, 0f, 0f);
-			}
-			heoliennes.UpdateInstancesData();
+//			heoliennes = (VAOItem<WeightedInstancedData>)vaoDeformables.Add (OBJMeshLoader.Load ("Meshes/heolienne.obj"));
+//			heoliennes.DiffuseTexture = Tetra.Texture.Load ("Meshes/heolienne.png");
+//			heoliennes.InstancedDatas = new Tetra.WeightedInstancedData[nbHeol];
+//			for (int i = 0; i < nbHeol; i++) {
+//				Vector2 pos = new Vector2 ((float)rnd.Next(0,terrain.GridSize), (float)rnd.Next(0,terrain.GridSize));
+//				heoliennes.InstancedDatas[i].modelMats = Matrix4.CreateScale(0.1f) * Matrix4.CreateTranslation (pos.X-(pos.X % 4f) + 0.5f, pos.Y-(pos.Y % 4f) + 0.5f, 0f);
+//				heoliennes.InstancedDatas [i].quat0 = Quaternion.Identity;
+//				heoliennes.InstancedDatas [i].quat1 = Quaternion.Identity;
+//				heoliennes.InstancedDatas [i].quat2 = Quaternion.Identity;
+//				heoliennes.InstancedDatas [i].quat3 = Quaternion.Identity;
+////				heoliennes.InstancedDatas [i].bpos0 = new Vector4 (0f, 0f, 0f, 0f);
+////				heoliennes.InstancedDatas [i].bpos1 = new Vector4 (0f, 0f, 0f, 0f);
+////				heoliennes.InstancedDatas [i].bpos2 = new Vector4 (0f, 0f, 0f, 0f);
+////				heoliennes.InstancedDatas [i].bpos3 = new Vector4 (0f, 0f, 0f, 0f);
+//			}
+//			heoliennes.UpdateInstancesData();
 			nbHeol = 5;
 			heollow = (VAOItem<WeightedInstancedData>)vaoDeformables.Add (OBJMeshLoader.Load ("Meshes/heolienne_lod0.obj"));
 			heollow.DiffuseTexture = Tetra.Texture.Load ("Meshes/heollow.png");
@@ -249,18 +249,18 @@ namespace Ottd3D
 			}
 			heollow.UpdateInstancesData();
 
-			pawn = (VAOItem<WeightedInstancedData>)vaoDeformables.Add (OBJMeshLoader.Load ("Meshes/pawn.obj"));
-			pawn.DiffuseTexture = Tetra.Texture.Load ("Meshes/pawn.png");
-			pawn.InstancedDatas = new Tetra.WeightedInstancedData[nbHeol];
-			for (int i = 0; i < nbHeol; i++) {
-				Vector2 pos = new Vector2 ((float)rnd.Next(0,terrain.GridSize), (float)rnd.Next(0,terrain.GridSize));
-				pawn.InstancedDatas[i].modelMats = Matrix4.CreateTranslation (pos.X-(pos.X % 4f) + 0.5f, pos.Y-(pos.Y % 4f) + 0.5f, 0f);
-				pawn.InstancedDatas [i].quat0 = Quaternion.Identity;
-				pawn.InstancedDatas [i].quat1 = Quaternion.Identity;
-				pawn.InstancedDatas [i].quat2 = Quaternion.Identity;
-				pawn.InstancedDatas [i].quat3 = Quaternion.Identity;
-			}
-			pawn.UpdateInstancesData();
+//			pawn = (VAOItem<WeightedInstancedData>)vaoDeformables.Add (OBJMeshLoader.Load ("Meshes/pawn.obj"));
+//			pawn.DiffuseTexture = Tetra.Texture.Load ("Meshes/pawn.png");
+//			pawn.InstancedDatas = new Tetra.WeightedInstancedData[nbHeol];
+//			for (int i = 0; i < nbHeol; i++) {
+//				Vector2 pos = new Vector2 ((float)rnd.Next(0,terrain.GridSize), (float)rnd.Next(0,terrain.GridSize));
+//				pawn.InstancedDatas[i].modelMats = Matrix4.CreateTranslation (pos.X-(pos.X % 4f) + 0.5f, pos.Y-(pos.Y % 4f) + 0.5f, 0f);
+//				pawn.InstancedDatas [i].quat0 = Quaternion.Identity;
+//				pawn.InstancedDatas [i].quat1 = Quaternion.Identity;
+//				pawn.InstancedDatas [i].quat2 = Quaternion.Identity;
+//				pawn.InstancedDatas [i].quat3 = Quaternion.Identity;
+//			}
+//			pawn.UpdateInstancesData();
 
 			//landItemsVao.ComputeTangents();
 			vaoDeformables.BuildBuffers ();
@@ -336,8 +336,8 @@ namespace Ottd3D
 			//			landItemsVao.Render (PrimitiveType.Triangles, treesLeave);
 			deformableObjShader.SetBones (heolBones);
 			vaoDeformables.Render (PrimitiveType.Triangles, heollow);
-//			objShader.SetBones (pawnBones);
-//			landItemsVao.Render (PrimitiveType.Triangles, pawn);
+//			deformableObjShader.SetBones (pawnBones);
+//			vaoDeformables.Render (PrimitiveType.Triangles, pawn);
 			vaoDeformables.Unbind ();
 
 
@@ -403,12 +403,12 @@ namespace Ottd3D
 			//				gridCacheIsUpToDate = false;
 			//			}
 			DualQuaternion dq = new DualQuaternion(Quaternion.FromEulerAngles(0f,heolAngle,0f),new Vector3(0f,0f,0f));
-			for (int i = 0; i < heoliennes.InstancedDatas.Length; i++) {
-				heoliennes.InstancedDatas [i].quat0 = new DualQuaternion(Quaternion.FromEulerAngles(heolAngle*0.2f,0f,0f),new Vector3(0f,0f,0f)).m_real;
-				heoliennes.InstancedDatas [i].bpos1 = dq.m_dual;
-				heoliennes.InstancedDatas [i].quat1 = heoliennes.InstancedDatas [i].quat0*dq.m_real;
-			}
-			heoliennes.UpdateInstancesData ();
+//			for (int i = 0; i < heoliennes.InstancedDatas.Length; i++) {
+//				heoliennes.InstancedDatas [i].quat0 = new DualQuaternion(Quaternion.FromEulerAngles(heolAngle*0.2f,0f,0f),new Vector3(0f,0f,0f)).m_real;
+//				heoliennes.InstancedDatas [i].bpos1 = dq.m_dual;
+//				heoliennes.InstancedDatas [i].quat1 = heoliennes.InstancedDatas [i].quat0*dq.m_real;
+//			}
+//			heoliennes.UpdateInstancesData ();
 
 			for (int i = 0; i < heollow.InstancedDatas.Length; i++) {
 				//heollow.InstancedDatas [i].bpos1 = dq.m_dual;
@@ -416,18 +416,18 @@ namespace Ottd3D
 			}
 			heollow.UpdateInstancesData ();
 
-			for (int i = 0; i < pawn.InstancedDatas.Length; i++) {
-				pawn.InstancedDatas [i].quat1 = Quaternion.FromEulerAngles(pawnAngle,pawnAngle,pawnAngle);
-			}
-			pawn.UpdateInstancesData ();
-
-			pawnAngle += pawnAngleIncrement;
-
-			if (pawnAngleIncrement > 0f){
-				if (pawnAngle > pawnAngleLimit)
-					pawnAngleIncrement = -pawnAngleIncrement;
-			}else if (pawnAngle < -pawnAngleLimit)
-				pawnAngleIncrement = -pawnAngleIncrement;
+//			for (int i = 0; i < pawn.InstancedDatas.Length; i++) {
+//				pawn.InstancedDatas [i].quat1 = Quaternion.FromEulerAngles(pawnAngle,pawnAngle,pawnAngle);
+//			}
+//			pawn.UpdateInstancesData ();
+//
+//			pawnAngle += pawnAngleIncrement;
+//
+//			if (pawnAngleIncrement > 0f){
+//				if (pawnAngle > pawnAngleLimit)
+//					pawnAngleIncrement = -pawnAngleIncrement;
+//			}else if (pawnAngle < -pawnAngleLimit)
+//				pawnAngleIncrement = -pawnAngleIncrement;
 
 			heolAngle += MathHelper.Pi * 0.007f;			
 		}
@@ -567,7 +567,6 @@ namespace Ottd3D
 		void updateShadowMap()
 		{
 			GL.BindFramebuffer(FramebufferTarget.Framebuffer, fboShadow);
-			GL.DrawBuffer (DrawBufferMode.None);
 
 			//terrain.UpdateMVP (lightProjection, lightView, vLook);
 			shaderSharedData.Datas.projection = lightProjection;
@@ -601,7 +600,6 @@ namespace Ottd3D
 			shaderSharedData.Update ();
 
 			GL.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
-			GL.DrawBuffer (DrawBufferMode.Back);
 			GL.Viewport (viewport [0], viewport [1], viewport [2], viewport [3]);
 		}
 		#endregion
@@ -892,10 +890,10 @@ namespace Ottd3D
 				viewedTexture = terrain.gridDepthTex;
 				break;
 			case "CC":
-				viewedTexture = terrain.gridCacheTex;
+				viewedTexture = terrain.colorTexId;
 				break;
 			case "CS":
-				viewedTexture = terrain.gridSelectionTex;
+				viewedTexture = terrain.selectionTexId;
 				break;
 			case "BBC":
 				viewedTexture = -1;
@@ -1139,7 +1137,6 @@ namespace Ottd3D
 
 			GL.DeleteFramebuffer (fbo);
 			GL.DeleteTexture (backbuffDepth);
-			GL.DrawBuffer (DrawBufferMode.Back);
 		}
 
 		#region Main and CTOR

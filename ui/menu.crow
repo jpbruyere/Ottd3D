@@ -6,11 +6,26 @@
 			Caption="Windows" Width="-1">
 			<Border Fit="True" Background="0,4;0,4;0,4;0,8" Margin="2">
 				<VerticalStack Fit="true" Margin="10">
-					<CheckBox Name="checkImgViewer" Caption="Image Viewer" HorizontalAlignment="Left" Checked="onShowWindow" Unchecked="onHideWindow"/>
-					<CheckBox Name="checkSplatting" Caption="Splatting" HorizontalAlignment="Left" Checked="onShowWindow" Unchecked="onHideWindow"/>
-					<CheckBox Name="checkHeightMap" Caption="Height map" HorizontalAlignment="Left" Checked="onShowWindow" Unchecked="onHideWindow"/>
-					<CheckBox Name="checkFps" Caption="FPS" HorizontalAlignment="Left" Checked="onShowWindow" Unchecked="onHideWindow"/>
-					<CheckBox Name="checkShaderEditor" Caption="Shader Editor" HorizontalAlignment="Left" Checked="onShowWindow" Unchecked="onHideWindow"/>
+					<CheckBox
+						MouseEnter="{Background=BlueCrayola}"
+						MouseLeave="{Background=Transparent}"
+						Name="checkImgViewer" Caption="Image Viewer" HorizontalAlignment="Left" Checked="onShowWindow" Unchecked="onHideWindow"/>
+					<CheckBox
+						MouseEnter="{Background=BlueCrayola}"
+						MouseLeave="{Background=Transparent}"
+						Name="checkSplatting" Caption="Splatting" HorizontalAlignment="Left" Checked="onShowWindow" Unchecked="onHideWindow"/>
+					<CheckBox 
+						MouseEnter="{Background=BlueCrayola}"
+						MouseLeave="{Background=Transparent}"
+						Name="checkHeightMap" Caption="Height map" HorizontalAlignment="Left" Checked="onShowWindow" Unchecked="onHideWindow"/>
+					<CheckBox 
+						MouseEnter="{Background=BlueCrayola}"
+						MouseLeave="{Background=Transparent}"
+						Name="checkFps" Caption="FPS" HorizontalAlignment="Left" Checked="onShowWindow" Unchecked="onHideWindow"/>
+					<CheckBox 
+						MouseEnter="{Background=BlueCrayola}"
+						MouseLeave="{Background=Transparent}"
+						Name="checkShaderEditor" Caption="Shader Editor" HorizontalAlignment="Left" Checked="onShowWindow" Unchecked="onHideWindow"/>
 				</VerticalStack>
 			</Border>
 		</Popper>

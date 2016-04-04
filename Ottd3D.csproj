@@ -114,25 +114,19 @@
     <Folder Include="images\trees\" />
     <Folder Include="images\skybox\" />
     <Folder Include="Meshes\trees\" />
+    <Folder Include="images\old\" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="images\grass_green_d.jpg" />
-    <EmbeddedResource Include="images\grass_rocky_d.jpg" />
-    <EmbeddedResource Include="images\grass_autumn_orn_d.jpg" />
-    <EmbeddedResource Include="images\grass_autumn_red_d.jpg" />
-    <EmbeddedResource Include="images\grass_green2y_d.jpg" />
-    <EmbeddedResource Include="images\grass_ground2y_d.jpg" />
-    <EmbeddedResource Include="images\grass_ground_d.jpg" />
-    <EmbeddedResource Include="images\grass_mix_d.jpg" />
-    <EmbeddedResource Include="images\grass_mix_ylw_d.jpg" />
-    <EmbeddedResource Include="images\ground_crackedo_d.jpg" />
-    <EmbeddedResource Include="images\ground_crackedv_d.jpg" />
-    <EmbeddedResource Include="images\ground_cracks2v_d.jpg" />
-    <EmbeddedResource Include="images\ground_cracks2y_d.jpg" />
-    <EmbeddedResource Include="images\grass.jpg" />
+    <EmbeddedResource Include="images\grass.jpg">
+      <Gettext-ScanForTranslations>False</Gettext-ScanForTranslations>
+    </EmbeddedResource>
     <EmbeddedResource Include="ui\BrushImageItem.goml" />
-    <EmbeddedResource Include="images\grass2.jpg" />
-    <EmbeddedResource Include="images\brownRock.jpg" />
+    <EmbeddedResource Include="images\grass2.jpg">
+      <Gettext-ScanForTranslations>False</Gettext-ScanForTranslations>
+    </EmbeddedResource>
+    <EmbeddedResource Include="images\brownRock.jpg">
+      <Gettext-ScanForTranslations>False</Gettext-ScanForTranslations>
+    </EmbeddedResource>
     <EmbeddedResource Include="ui\heightEditionMenu.goml" />
     <EmbeddedResource Include="ui\SplatTexPopTemplate.goml" />
     <EmbeddedResource Include="ui\SpattingMenu.goml" />
@@ -149,6 +143,33 @@
     <EmbeddedResource Include="ui\imgView.crow" />
     <EmbeddedResource Include="ui\Button.style" />
     <EmbeddedResource Include="ui\tmpPopper.crow" />
+    <EmbeddedResource Include="images\sand2.jpg">
+      <Gettext-ScanForTranslations>False</Gettext-ScanForTranslations>
+    </EmbeddedResource>
+    <EmbeddedResource Include="images\concrete.jpg">
+      <Gettext-ScanForTranslations>False</Gettext-ScanForTranslations>
+    </EmbeddedResource>
+    <EmbeddedResource Include="images\sandcrack.jpg">
+      <Gettext-ScanForTranslations>False</Gettext-ScanForTranslations>
+    </EmbeddedResource>
+    <EmbeddedResource Include="images\rock.jpg">
+      <Gettext-ScanForTranslations>False</Gettext-ScanForTranslations>
+    </EmbeddedResource>
+    <EmbeddedResource Include="images\dirt.jpg">
+      <Gettext-ScanForTranslations>False</Gettext-ScanForTranslations>
+    </EmbeddedResource>
+    <EmbeddedResource Include="images\sand.jpg">
+      <Gettext-ScanForTranslations>False</Gettext-ScanForTranslations>
+    </EmbeddedResource>
+    <EmbeddedResource Include="images\rock2.png">
+      <Gettext-ScanForTranslations>False</Gettext-ScanForTranslations>
+    </EmbeddedResource>
+    <EmbeddedResource Include="images\rockcliff.jpg">
+      <Gettext-ScanForTranslations>False</Gettext-ScanForTranslations>
+    </EmbeddedResource>
+    <EmbeddedResource Include="images\gravel.jpg">
+      <Gettext-ScanForTranslations>False</Gettext-ScanForTranslations>
+    </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="lib\GGL\GGL.csproj">
@@ -276,5 +297,18 @@
     <None Include="Shaders\objInstanced.vert">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Include="images\old\grass_autumn_orn_d.jpg" />
+    <None Include="images\old\grass_autumn_red_d.jpg" />
+    <None Include="images\old\grass_green_d.jpg" />
+    <None Include="images\old\grass_green2y_d.jpg" />
+    <None Include="images\old\grass_ground_d.jpg" />
+    <None Include="images\old\grass_ground2y_d.jpg" />
+    <None Include="images\old\grass_mix_d.jpg" />
+    <None Include="images\old\grass_mix_ylw_d.jpg" />
+    <None Include="images\old\grass_rocky_d.jpg" />
+    <None Include="images\old\ground_crackedo_d.jpg" />
+    <None Include="images\old\ground_crackedv_d.jpg" />
+    <None Include="images\old\ground_cracks2v_d.jpg" />
+    <None Include="images\old\ground_cracks2y_d.jpg" />
   </ItemGroup>
 </Project>

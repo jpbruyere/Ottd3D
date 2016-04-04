@@ -108,7 +108,6 @@ namespace Ottd3D
 			GL.Clear (ClearBufferMask.ColorBufferBit);
 
 			GL.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
-			GL.DrawBuffer(DrawBufferMode.Back);
 
 			GL.ClearColor(clearCols[0], clearCols[1], clearCols[2], clearCols[3]);
 			GL.Viewport (viewport [0], viewport [1], viewport [2], viewport [3]);

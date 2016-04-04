@@ -92,19 +92,16 @@ vec2 poissonDisk[16] = vec2[](
 	vec2( 0.14383161, -0.14100790 )
 );
 
+const int SHADOWPASS = 1 << 0;
+const int NORMALPASS = 1 << 1;
+
 void main(void)
-{	
-	if (Shared.y == 1.0){
-		//shadow pass
+{
+	int pass = floatBitsToInt(Shared.y);
+
+	if (bool(pass & SHADOWPASS)){
 		gl_FragDepth = gl_FragCoord.z;
 	}else{
-		//normal pass
-			//		const vec3 Diffuse = vec3(1.0, 1.0, 1.0);
-			//const vec3 Ambient = vec3(0.3, 0.3, 0.3);
-			//const vec3 Specular = vec3(1.0,1.0,1.0);
-			//const float Shininess =8.0;
-			//const float ScreenGamma = 1.0;
-
 		vec4 diffTex = texture( tex, texCoord);// * Color;
 		if (diffTex.a == 0.0)
 			discard;
@@ -142,12 +139,11 @@ void main(void)
 
 		vec3 colorLinear = diffTex.rgb * (Ambient + Idiff) + Ispec;
 		colorLinear = colorLinear * visibility;
-		//colorLinear = mix(colorLinear , fogColor.rgb, getFogFactor(fFogCoord));
+		colorLinear = mix(colorLinear , fogColor.rgb, getFogFactor(fFogCoord));
 
 		float ScreenGamma = Shared.x;
 
 		out_frag_color = vec4(pow(colorLinear, vec3(1.0/ScreenGamma)), diffTex.a);
-		//out_frag_color = vec4(colorLinear, diffTex.a);
 		gl_FragDepth = gl_FragCoord.z;
 	}
 }

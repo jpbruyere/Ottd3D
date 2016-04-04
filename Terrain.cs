@@ -62,7 +62,7 @@ namespace Ottd3D
 		System.Drawing.Size cacheSize;
 		float selectionRadius = 1f/1024f;
 		State currentState = State.ClearHM;
-		Vector4 splatBrush = new Vector4(0f, 1f/255f, 100f/255f, 1f);
+		Vector4 splatBrush = new Vector4(0f, 1.0f/8.0f, 0f, 1f);
 
 		bool wireframe = false;
 
@@ -72,20 +72,11 @@ namespace Ottd3D
 		string[] groundTextures = new string[]
 		{
 			"#Ottd3D.images.grass2.jpg",
-			"#Ottd3D.images.grass.jpg",
-			"#Ottd3D.images.brownRock.jpg",
-			"#Ottd3D.images.grass_green_d.jpg",
-			"#Ottd3D.images.grass_ground_d.jpg",
-			"#Ottd3D.images.grass_ground2y_d.jpg",
-			"#Ottd3D.images.grass_mix_ylw_d.jpg",
-			"#Ottd3D.images.grass_mix_d.jpg",
-			"#Ottd3D.images.grass_autumn_orn_d.jpg",
-			"#Ottd3D.images.grass_autumn_red_d.jpg",
-			"#Ottd3D.images.grass_rocky_d.jpg",
-			"#Ottd3D.images.ground_cracks2v_d.jpg",
-			"#Ottd3D.images.ground_crackedv_d.jpg",
-			"#Ottd3D.images.ground_cracks2y_d.jpg",
-			"#Ottd3D.images.ground_crackedo_d.jpg"			
+			"#Ottd3D.images.gravel.jpg",
+			"#Ottd3D.images.rock2.png",
+			"#Ottd3D.images.rock.jpg",
+			"#Ottd3D.images.sand.jpg",
+			"#Ottd3D.images.sandcrack.jpg",			
 		};
 
 		byte[] hmData;//height map
@@ -142,7 +133,7 @@ namespace Ottd3D
 		public string[] GroundTextures { get { return groundTextures; }}
 
 		public int SplatBrushSplat1 {
-			get { return (int)(splatBrush.X * 255); }
+			get { return (int)(splatBrush.X * 255f); }
 			set {
 				if (value == SplatBrushSplat1)
 					return;
@@ -151,20 +142,20 @@ namespace Ottd3D
 			}
 		}
 		public int SplatBrushSplat2 {
-			get { return (int)(splatBrush.Y * 255); }
+			get { return (int)(splatBrush.Y * 255f); }
 			set {
 				if (value == SplatBrushSplat2)
 					return;
-				splatBrush.Y = (float)value / 255f;
+				//splatBrush.Y = (float)value / 256f;
 				NotifyValueChanged ("SplatBrushSplat2", SplatBrushSplat2);
 			}
 		}
 		public int SplatBrushPressure {
-			get { return (int)(splatBrush.Z * 255); }
+			get { return (int)(splatBrush.Y * 15f); }
 			set {
 				if (value == SplatBrushPressure)
 					return;
-				splatBrush.Z = (float)value / 255f;
+				splatBrush.Y = (float)value / 15f;
 				NotifyValueChanged ("SplatBrushPressure", SplatBrushPressure);
 			}
 		}
@@ -324,7 +315,7 @@ namespace Ottd3D
 			for (int y = 0; y < _gridSize; y++) {
 				for (int x = 0; x < _gridSize; x++) {				
 					positionVboData [_gridSize * y + x] = new Vector3 (x, y, z);
-					texVboData [_gridSize * y + x] = new Vector2 ((float)x*0.5f, (float)y*0.5f);
+					texVboData [_gridSize * y + x] = new Vector2 ((float)x*1.0f, (float)y*1.0f);
 
 					if (y < _gridSize-1) {
 						indicesVboData [(_gridSize * 2 + 1) * y + x*2+ 1] = _gridSize * y + x;
@@ -352,8 +343,8 @@ namespace Ottd3D
 		heightMapIsUpToDate = true,
 		splatTextureIsUpToDate = true;
 		QuadVAO cacheQuad;
-		public int gridCacheTex,
-					gridSelectionTex;
+		public int colorTexId,
+					selectionTexId;
 		public int gridDepthTex;
 		int fboGrid;
 		DrawBuffersEnum[] dbe = new DrawBuffersEnum[]
@@ -385,7 +376,7 @@ namespace Ottd3D
 			GL.ActiveTexture (TextureUnit.Texture1);
 			GL.BindTexture (TextureTarget.Texture2D, gridDepthTex);
 			GL.ActiveTexture (TextureUnit.Texture0);
-			GL.BindTexture (TextureTarget.Texture2D, gridCacheTex);
+			GL.BindTexture (TextureTarget.Texture2D, colorTexId);
 			cacheQuad.Render (PrimitiveType.TriangleStrip);
 			GL.BindTexture (TextureTarget.Texture2D, 0);
 			if (depthTest)
@@ -399,8 +390,8 @@ namespace Ottd3D
 			Tetra.Texture.DefaultMinFilter = TextureMinFilter.Nearest;
 			Tetra.Texture.GenerateMipMaps = false;
 			{
-				gridCacheTex = new Tetra.Texture (CacheSize.Width, CacheSize.Height);
-				gridSelectionTex = new Tetra.Texture (CacheSize.Width, CacheSize.Height);
+				colorTexId = new Tetra.Texture (CacheSize.Width, CacheSize.Height);
+				selectionTexId = new Tetra.Texture (CacheSize.Width, CacheSize.Height);
 			}
 			Tetra.Texture.ResetToDefaultLoadingParams ();
 
@@ -424,9 +415,11 @@ namespace Ottd3D
 			GL.FramebufferTexture2D(FramebufferTarget.Framebuffer, FramebufferAttachment.DepthAttachment,
 				TextureTarget.Texture2D, gridDepthTex, 0);
 			GL.FramebufferTexture2D(FramebufferTarget.Framebuffer, FramebufferAttachment.ColorAttachment0,
-				TextureTarget.Texture2D, gridCacheTex, 0);
+				TextureTarget.Texture2D, colorTexId, 0);
 			GL.FramebufferTexture2D(FramebufferTarget.Framebuffer, FramebufferAttachment.ColorAttachment1,
-				TextureTarget.Texture2D, gridSelectionTex, 0);
+				TextureTarget.Texture2D, selectionTexId, 0);
+
+			GL.DrawBuffers(2, dbe);
 
 			if (GL.CheckFramebufferStatus(FramebufferTarget.Framebuffer) != FramebufferErrorCode.FramebufferComplete)
 			{
@@ -438,12 +431,10 @@ namespace Ottd3D
 		void updateGridFbo()
 		{						
 			GL.BindFramebuffer(FramebufferTarget.Framebuffer, fboGrid);
-			GL.DrawBuffers(2, dbe);
 
 			draw ();
 
 			GL.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
-			GL.DrawBuffer(DrawBufferMode.Back);
 			getSelectionTextureData ();
 
 
@@ -472,7 +463,7 @@ namespace Ottd3D
 			CurrentState = State.Play;
 		}
 		#endregion
-
+		int updateCount = 0;
 		public void Update(Ottd3DWindow win, bool updateCache = false){
 			if (updateCache)
 				gridCacheIsUpToDate = false;
@@ -514,13 +505,17 @@ namespace Ottd3D
 				currentState = State.Play;
 				break;
 			case State.GroundTexturing:
+				updateCount++;
+				if (updateCount < 5)
+					break;
+				updateCount = 0;
 				if (win.CrowInterface.hoverWidget != null)
 					break;
 				if (win.Mouse [OpenTK.Input.MouseButton.Left]) {
 					splattingBrushShader.Color = splatBrush;
 					updateSplatting ();
 				} else if (win.Mouse [OpenTK.Input.MouseButton.Right]) {
-					splattingBrushShader.Color = new Vector4 (splatBrush.X, splatBrush.Y, -splatBrush.Z, 1f);
+					splattingBrushShader.Color = new Vector4 (splatBrush.X, -splatBrush.Y, 0f, 1f);
 					updateSplatting ();
 				}				
 				break;
@@ -580,7 +575,7 @@ namespace Ottd3D
 		}
 		void getSelectionTextureData()
 		{
-			GL.BindTexture (TextureTarget.Texture2D, gridSelectionTex);
+			GL.BindTexture (TextureTarget.Texture2D, selectionTexId);
 
 			GL.GetTexImage (TextureTarget.Texture2D, 0, 
 				PixelFormat.Rgba, PixelType.UnsignedByte, selectionMap);
@@ -601,9 +596,11 @@ namespace Ottd3D
 			}
 			updatePtrHm ();
 		}
-		void onSave(object sender, Crow.MouseButtonEventArgs e){
-			Texture.Save (splattingBrushShader.OutputTex, @"splat.png");
+		void onSaveHM(object sender, Crow.MouseButtonEventArgs e){
 			Texture.Save (hmGenerator.OutputTex, @"heightmap.png");
+		}
+		void onSaveSplatting(object sender, Crow.MouseButtonEventArgs e){
+			Texture.Save (splattingBrushShader.OutputTex, @"splat.png");
 		}
 		void onLoad(object sender, Crow.MouseButtonEventArgs e){
 			CurrentState = State.LoadMap;
@@ -622,10 +619,10 @@ namespace Ottd3D
 		{
 			if (cacheQuad != null)
 				cacheQuad.Dispose ();
-			if (GL.IsTexture (gridCacheTex))
-				GL.DeleteTexture (gridCacheTex);
-			if (GL.IsTexture (gridSelectionTex))
-				GL.DeleteTexture (gridSelectionTex);
+			if (GL.IsTexture (colorTexId))
+				GL.DeleteTexture (colorTexId);
+			if (GL.IsTexture (selectionTexId))
+				GL.DeleteTexture (selectionTexId);
 			if (GL.IsTexture (gridDepthTex))
 				GL.DeleteTexture (gridDepthTex);
 			if (GL.IsFramebuffer (fboGrid))

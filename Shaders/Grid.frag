@@ -1,5 +1,5 @@
 #version 330
-precision mediump float;
+precision highp float;
 
 layout (std140) uniform block_data{
 	mat4 Projection;
@@ -90,11 +90,15 @@ vec2 poissonDisk[16] = vec2[](
 	vec2( 0.14383161, -0.14100790 )
 );
 
+
+const int SHADOWPASS = 1 << 0;
+const int NORMALPASS = 1 << 1;
+
 void main(void)
 {
+	int pass = floatBitsToInt(Shared.y);
 
-	if (Shared.y == 1.0){
-		//shadow pass
+	if (bool(pass & SHADOWPASS)){
 		gl_FragDepth = gl_FragCoord.z;
 	}else{
 		//normal pass
@@ -126,10 +130,22 @@ void main(void)
 
 		vec4 splat = texture (splatTex, splatTexCoord);
 
-		vec3 t1 = texture( tex, vec3(texCoord, splat.r * 255.0)).rgb;
-		vec3 t2 = texture( tex, vec3(texCoord, splat.g * 255.0)).rgb;
+		vec3 accum=vec3(0.0,0.0,0.0);
+		float accumDiv = 0.0;
 
-		vec3 c = mix (t1, t2, splat.b);
+		uint coef = uint(splat.r * 0xFF)
+					+ (uint(splat.g * 0xFF)<<8)
+					+ (uint(splat.b * 0xFF)<<16);
+
+		for (int i = 0; i < 6; i++){
+			float coefi = float(coef & 0xFu)/0xF;
+			accum += texture( tex, vec3(texCoord, float(i))).rgb * coefi;
+
+			accumDiv+=coefi;
+			coef = coef >> 4;
+		}
+
+		vec3 c = accum/accumDiv ;
 
 		//Shadow
 		// ...variable bias
@@ -148,9 +164,12 @@ void main(void)
 
 		vec3 colorLinear = c * (Ambient + Idiff) + Ispec;
 		colorLinear = colorLinear * visibility;
+		colorLinear = mix(colorLinear , fogColor.rgb, getFogFactor(fFogCoord));
+
 		vec4 gcc = mix(sel_color, vec4(colorLinear,1.0), selCoef);
-		gcc = mix(gcc , fogColor, getFogFactor(fFogCoord));
+
 		float ScreenGama = Shared.x;
+
 		out_frag_color = vec4(pow(gcc.rgb, vec3(1.0/ScreenGama)), gcc.a);
 
 

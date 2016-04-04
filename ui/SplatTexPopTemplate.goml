@@ -3,7 +3,7 @@
 	<Template>
 		<Border CornerRadius="0" Foreground="LightGray" Height="{../../HeightPolicy}" Width="{../../WidthPolicy}">
 			<HorizontalStack Margin="1" Spacing="1" Height="{../../../HeightPolicy}" Width="{../../../WidthPolicy}">
-				<Image Path="{../../../../SelectedItem}" MaximumSize="40;40"
+				<Image Path="{../../../../SelectedItem}" MaximumSize="100;100"
 					Margin="1"
 					Height="{../../../../HeightPolicy}" Width="{../../../../WidthPolicy}"/>
 				<Button Width="14" Height="0" Focusable="false"
